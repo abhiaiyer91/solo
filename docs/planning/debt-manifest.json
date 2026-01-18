@@ -1,6 +1,12 @@
 {
   "lastSweep": "2026-01-18T10:30:00Z",
   "lastUpdate": "2026-01-18T10:30:00Z",
+  "devLoop": {
+    "cyclesSinceLastSweep": 0,
+    "totalCycles": 0,
+    "lastSweepCycle": 0,
+    "autoFixLevel": null
+  },
   "summary": {
     "total": 35,
     "bySeverity": {

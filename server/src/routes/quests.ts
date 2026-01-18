@@ -10,6 +10,13 @@ import {
   getAllQuestTemplates,
   activateQuest,
 } from '../services/quest'
+import {
+  getAdaptedTarget,
+  getAllAdaptedTargets,
+  setManualTarget,
+  clearManualOverride,
+  adaptTarget,
+} from '../services/quest-adaptation'
 import { getWeeklyQuests, getWeeklyQuestById } from '../services/weekly-quest'
 import {
   getRotatingQuestUnlockStatus,
@@ -366,6 +373,142 @@ questRoutes.get('/quests/bonus/status', requireAuth, async (c) => {
   } catch (error) {
     console.error('Bonus quest status error:', error)
     return c.json({ error: 'Failed to get bonus quest status' }, 500)
+  }
+})
+
+// ============================================================
+// Adapted Targets Endpoints
+// ============================================================
+
+// GET /api/quests/targets - Get all adapted targets for user
+questRoutes.get('/quests/targets', requireAuth, async (c) => {
+  const user = c.get('user')!
+
+  try {
+    const targets = await getAllAdaptedTargets(user.id)
+    return c.json({
+      targets: targets.map((t) => ({
+        id: t.id,
+        questTemplateId: t.questTemplateId,
+        baseTarget: t.baseTarget,
+        adaptedTarget: t.adaptedTarget,
+        manualOverride: t.manualOverride,
+        completionRate: t.completionRate,
+        averageAchievement: t.averageAchievement,
+        lastAdaptedAt: t.lastAdaptedAt,
+      })),
+    })
+  } catch (error) {
+    console.error('Get adapted targets error:', error)
+    return c.json({ error: 'Failed to get adapted targets' }, 500)
+  }
+})
+
+// GET /api/quests/targets/:templateId - Get adapted target for specific quest
+questRoutes.get('/quests/targets/:templateId', requireAuth, async (c) => {
+  const user = c.get('user')!
+  const templateId = c.req.param('templateId')
+
+  try {
+    const target = await getAdaptedTarget(user.id, templateId)
+
+    if (!target) {
+      return c.json({ error: 'No target found for this quest' }, 404)
+    }
+
+    return c.json({
+      target: {
+        id: target.id,
+        questTemplateId: target.questTemplateId,
+        baseTarget: target.baseTarget,
+        adaptedTarget: target.adaptedTarget,
+        manualOverride: target.manualOverride,
+        completionRate: target.completionRate,
+        averageAchievement: target.averageAchievement,
+        lastAdaptedAt: target.lastAdaptedAt,
+      },
+    })
+  } catch (error) {
+    console.error('Get adapted target error:', error)
+    return c.json({ error: 'Failed to get adapted target' }, 500)
+  }
+})
+
+// PUT /api/quests/targets/:templateId - Set manual target override
+questRoutes.put('/quests/targets/:templateId', requireAuth, async (c) => {
+  const user = c.get('user')!
+  const templateId = c.req.param('templateId')
+
+  try {
+    const body = await c.req.json<{ target: number }>()
+
+    if (typeof body.target !== 'number' || body.target <= 0) {
+      return c.json({ error: 'target must be a positive number' }, 400)
+    }
+
+    const updated = await setManualTarget(user.id, templateId, body.target)
+
+    return c.json({
+      success: true,
+      target: {
+        id: updated.id,
+        questTemplateId: updated.questTemplateId,
+        baseTarget: updated.baseTarget,
+        adaptedTarget: updated.adaptedTarget,
+        manualOverride: updated.manualOverride,
+      },
+      message: '[SYSTEM] Target manually set. Automatic adaptation paused.',
+    })
+  } catch (error) {
+    console.error('Set manual target error:', error)
+    const message = error instanceof Error ? error.message : 'Failed to set target'
+    return c.json({ error: message }, 400)
+  }
+})
+
+// DELETE /api/quests/targets/:templateId/override - Clear manual override
+questRoutes.delete('/quests/targets/:templateId/override', requireAuth, async (c) => {
+  const user = c.get('user')!
+  const templateId = c.req.param('templateId')
+
+  try {
+    const updated = await clearManualOverride(user.id, templateId)
+
+    return c.json({
+      success: true,
+      target: {
+        id: updated.id,
+        questTemplateId: updated.questTemplateId,
+        baseTarget: updated.baseTarget,
+        adaptedTarget: updated.adaptedTarget,
+        manualOverride: updated.manualOverride,
+      },
+      message: '[SYSTEM] Manual override cleared. Automatic adaptation resumed.',
+    })
+  } catch (error) {
+    console.error('Clear manual override error:', error)
+    return c.json({ error: 'Failed to clear override' }, 500)
+  }
+})
+
+// POST /api/quests/targets/:templateId/adapt - Force adaptation (for testing)
+questRoutes.post('/quests/targets/:templateId/adapt', requireAuth, async (c) => {
+  const user = c.get('user')!
+  const templateId = c.req.param('templateId')
+
+  try {
+    const result = await adaptTarget(user.id, templateId)
+
+    return c.json({
+      ...result,
+      message:
+        result.oldTarget !== result.newTarget
+          ? `[SYSTEM] Target adapted: ${result.oldTarget} → ${result.newTarget}`
+          : '[SYSTEM] Target unchanged.',
+    })
+  } catch (error) {
+    console.error('Adapt target error:', error)
+    return c.json({ error: 'Failed to adapt target' }, 500)
   }
 })
 

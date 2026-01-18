@@ -4,6 +4,8 @@ import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { auth } from './lib/auth'
 import { authMiddleware } from './middleware/auth'
+import { securityHeaders, getSecureCorsConfig } from './middleware/security'
+import { rateLimiter } from './middleware/rate-limit'
 import { dbClient as db } from './db'
 
 // Route modules
@@ -17,6 +19,7 @@ import notificationRoutes from './routes/notifications'
 import accountabilityRoutes from './routes/accountability'
 import raidRoutes from './routes/raids'
 import onboardingRoutes from './routes/onboarding'
+import bodyRoutes from './routes/body'
 
 // Boss service imports
 import {
@@ -33,17 +36,23 @@ import { requireAuth } from './middleware/auth'
 
 const app = new Hono()
 
-// Middleware
-app.use('*', logger())
-app.use(
-  '*',
-  cors({
-    origin: [process.env.FRONTEND_URL || 'http://localhost:5173'],
-    credentials: true,
-  })
-)
+// ============================================================
+// Global Middleware Stack
+// ============================================================
 
-// Auth middleware for all routes
+// 1. Request logging
+app.use('*', logger())
+
+// 2. Security headers (XSS, clickjacking, etc.)
+app.use('*', securityHeaders)
+
+// 3. CORS with secure configuration
+app.use('*', cors(getSecureCorsConfig()))
+
+// 4. Rate limiting (100/min per IP, 1000/min per user)
+app.use('/api/*', rateLimiter)
+
+// 5. Auth middleware for all routes
 app.use('*', authMiddleware)
 
 // Better Auth handler - handles all /api/auth/* routes
@@ -84,6 +93,7 @@ app.route('/api', notificationRoutes)
 app.route('/api', accountabilityRoutes)
 app.route('/api', raidRoutes)
 app.route('/api', onboardingRoutes)
+app.route('/api', bodyRoutes)
 
 // Boss routes
 // GET /api/bosses - Get all available bosses for the user

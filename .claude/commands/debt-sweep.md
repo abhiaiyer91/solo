@@ -456,9 +456,52 @@ The debt manifest can feed into the main task system:
 /task-loop                     # Execute debt cleanup tasks
 ```
 
+### Automatic Debt Sweep in Dev Loop
+
+The dev-loop command automatically triggers debt sweeps at configurable intervals:
+
+```bash
+# Default: sweep every 5 task cycles
+/dev-loop --continuous
+
+# Custom interval: sweep every 3 cycles
+/dev-loop --continuous --debt-interval 3
+
+# Auto-fix high+ severity items during sweeps
+/dev-loop --continuous --debt-interval 5 --debt-fix high
+
+# Disable automatic sweeps
+/dev-loop --continuous --no-debt-sweep
+```
+
+When triggered by dev-loop, the sweep:
+1. Runs in focused mode (scan only, quick analysis)
+2. Updates the debt manifest with new items
+3. Auto-fixes eligible items if `--debt-fix` is set
+4. Reports summary and resumes task execution
+
+### Cycle Tracking
+
+The debt manifest tracks dev-loop integration state:
+
+```json
+{
+  "lastSweep": "2026-01-18T10:30:00Z",
+  "lastUpdate": "2026-01-18T10:30:00Z",
+  "devLoop": {
+    "cyclesSinceLastSweep": 0,
+    "totalCycles": 15,
+    "lastSweepCycle": 15,
+    "autoFixLevel": "high"
+  },
+  ...
+}
+```
+
 ## Scheduling Recommendation
 
 Run debt sweep:
+- **Automatic:** Let dev-loop handle it every 5 cycles (default)
 - Before starting a major refactor
 - At the start of each sprint/cycle
 - After a major feature is complete

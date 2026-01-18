@@ -263,6 +263,45 @@ export const playerArchives = pgTable(
 export type PlayerArchive = typeof playerArchives.$inferSelect
 export type NewPlayerArchive = typeof playerArchives.$inferInsert
 
+// Adapted Targets - Per-user personalized quest targets
+export const adaptedTargets = pgTable(
+  'adapted_targets',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    questTemplateId: text('quest_template_id')
+      .notNull()
+      .references(() => questTemplates.id, { onDelete: 'cascade' }),
+
+    // Target values
+    baseTarget: real('base_target').notNull(), // Standard target from template
+    adaptedTarget: real('adapted_target').notNull(), // Personalized target
+    manualOverride: boolean('manual_override').default(false).notNull(),
+
+    // Performance tracking for adaptation
+    completionRate: real('completion_rate'), // Last 14 days
+    averageAchievement: real('average_achievement'), // % of target achieved
+
+    lastAdaptedAt: timestamp('last_adapted_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    userQuestUnique: uniqueIndex('adapted_targets_user_quest_unique').on(
+      table.userId,
+      table.questTemplateId
+    ),
+    userIdx: index('adapted_targets_user_idx').on(table.userId),
+  })
+)
+
+export type AdaptedTarget = typeof adaptedTargets.$inferSelect
+export type NewAdaptedTarget = typeof adaptedTargets.$inferInsert
+
 // Narrative Content - Stores all narrative text for the game
 export const narrativeContents = pgTable(
   'narrative_contents',

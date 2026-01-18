@@ -9,6 +9,7 @@ import { Leaderboard } from '@/pages/Leaderboard'
 import { Titles } from '@/pages/Titles'
 import { Dungeons } from '@/pages/Dungeons'
 import { Onboarding } from '@/pages/Onboarding'
+import { Guild } from '@/pages/Guild'
 import { ProtectedRoute, OnboardingRoute } from '@/components/ProtectedRoute'
 import { AppShell } from '@/components/layout'
 import { ErrorBoundary, RouteErrorBoundary } from '@/components/error'
@@ -131,6 +132,18 @@ function App() {
                 <AppShell>
                   <RouteErrorBoundary>
                     <Profile />
+                  </RouteErrorBoundary>
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/guild"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <RouteErrorBoundary>
+                    <Guild />
                   </RouteErrorBoundary>
                 </AppShell>
               </ProtectedRoute>

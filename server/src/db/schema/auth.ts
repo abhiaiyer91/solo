@@ -57,6 +57,11 @@ export const users = pgTable(
     returnProtocolStartedAt: timestamp('return_protocol_started_at'),
     lastActivityAt: timestamp('last_activity_at'), // For detecting absence
 
+    // Body Composition Tracking (opt-in)
+    trackBodyComposition: boolean('track_body_composition').default(false).notNull(),
+    targetWeight: integer('target_weight'),  // kg - optional goal weight
+    targetCalories: integer('target_calories'),  // Daily calorie target
+
     // Hard Mode (unlocks at Season 3 or Level 25)
     hardModeEnabled: boolean('hard_mode_enabled').default(false).notNull(),
     hardModeUnlockedAt: timestamp('hard_mode_unlocked_at'),

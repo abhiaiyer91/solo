@@ -6,6 +6,13 @@ import {
   type BaselineAssessmentInput,
 } from '../db/schema'
 
+function requireDb() {
+  if (!db) {
+    throw new Error('Database connection required for baseline service')
+  }
+  return db
+}
+
 // Unit conversion helpers
 export function lbsToKg(lbs: number): number {
   return lbs * 0.453592
@@ -19,7 +26,7 @@ export function kgToLbs(kg: number): number {
 export async function getBaselineAssessment(
   userId: string
 ): Promise<BaselineAssessment | null> {
-  const result = await db
+  const result = await requireDb()
     .select()
     .from(baselineAssessments)
     .where(eq(baselineAssessments.userId, userId))
@@ -53,7 +60,7 @@ export async function saveBaselineAssessment(
 
   if (existing) {
     // Update existing assessment
-    const [updated] = await db
+    const [updated] = await requireDb()
       .update(baselineAssessments)
       .set({
         startingWeight,
@@ -78,7 +85,7 @@ export async function saveBaselineAssessment(
     assessment = updated!
   } else {
     // Create new assessment
-    const [created] = await db
+    const [created] = await requireDb()
       .insert(baselineAssessments)
       .values({
         userId,

@@ -65,6 +65,41 @@ Safe parallel pairs: one backend + one frontend task.
 3. Check if ideation needed (available < threshold)
 4. Report pipeline health
 
+### Debt Sweep Integration
+Triggered every N cycles (default: 5) during continuous execution:
+
+1. **Check cycle counter** - Track cycles since last debt sweep
+2. **Pause execution** when counter hits debt-interval threshold
+3. **Run debt sweep** - Scan codebase for new technical debt
+4. **Fix eligible items** if `--debt-fix` level is set:
+   - Only fix items with effort = trivial or low
+   - Fix in severity order: critical → high → medium → low
+   - Stop at specified severity level
+5. **Update manifests** - `debt-manifest.json` and `debt-report.md`
+6. **Report findings** - Show new debt, fixed items, remaining items
+7. **Reset counter** and resume task execution
+
+**Debt Sweep Trigger Logic:**
+```
+cycleCount = cycleCount + 1
+
+if cycleCount >= debtInterval:
+    cycleCount = 0
+    runDebtSweep()
+    
+    if debtFixLevel:
+        for item in debtItems.sortedBySeverity():
+            if item.severity >= debtFixLevel and item.effort in ['trivial', 'low']:
+                attemptAutoFix(item)
+```
+
+**Auto-Fixable Debt Categories:**
+- Security: Remove debug logging of credentials
+- Types: Add explicit return types to small functions
+- Complexity: Extract obvious helper functions
+- Dependencies: Update patch versions
+- TODOs: Complete trivial TODOs with clear solutions
+
 ## Agent Output Format
 
 All spawned agents MUST output this structured summary:
@@ -102,6 +137,21 @@ All spawned agents MUST output this structured summary:
 /dev-loop --parallel 2
 ```
 
+**Continuous with debt sweep every 3 cycles:**
+```
+/dev-loop --continuous --debt-interval 3
+```
+
+**Auto-fix high+ severity debt during continuous run:**
+```
+/dev-loop --continuous --debt-interval 5 --debt-fix high
+```
+
+**Focused feature work (skip debt sweeps):**
+```
+/dev-loop --continuous --no-debt-sweep
+```
+
 **Check status:**
 ```
 /task-status
@@ -112,3 +162,5 @@ All spawned agents MUST output this structured summary:
 - "Run the dev loop"
 - "What tasks are available?"
 - "Execute P1 tasks in parallel"
+- "Run tasks and clean up debt along the way"
+- "Do a debt sweep every 3 tasks"

@@ -53,6 +53,65 @@ export const baselineAssessments = pgTable(
 export type BaselineAssessment = typeof baselineAssessments.$inferSelect
 export type NewBaselineAssessment = typeof baselineAssessments.$inferInsert
 
+// Psychology Profile - AI-assessed motivation and behavioral patterns
+export const psychologyProfiles = pgTable(
+  'psychology_profiles',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' })
+      .unique(),
+
+    // Extracted traits from AI conversation
+    motivationType: text('motivation_type'), // achievement | social | mastery | health
+    primaryBarrier: text('primary_barrier'), // time | motivation | knowledge | injury | other
+    consistencyRisk: text('consistency_risk'), // low | medium | high
+    pressureResponse: text('pressure_response'), // positive | neutral | negative
+    accountabilityPreference: text('accountability_preference'), // solo | partner | group
+
+    // AI conversation log
+    conversationLog: text('conversation_log'), // JSON array of { role, content }
+
+    // AI-generated insights
+    insights: text('insights'), // JSON array of strings
+    recommendedApproach: text('recommended_approach'),
+
+    // Status
+    status: text('status').default('in_progress'), // in_progress | completed
+
+    assessedAt: timestamp('assessed_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+  },
+  (table) => ({
+    userIdx: index('psychology_user_idx').on(table.userId),
+    statusIdx: index('psychology_status_idx').on(table.status),
+  })
+)
+
+export type PsychologyProfile = typeof psychologyProfiles.$inferSelect
+export type NewPsychologyProfile = typeof psychologyProfiles.$inferInsert
+
+// Psychology conversation message type
+export interface PsychologyMessage {
+  role: 'system' | 'user' | 'assistant'
+  content: string
+  timestamp?: string
+}
+
+// Extracted psychology traits
+export interface PsychologyTraits {
+  motivationType: 'achievement' | 'social' | 'mastery' | 'health'
+  primaryBarrier: 'time' | 'motivation' | 'knowledge' | 'injury' | 'other'
+  consistencyRisk: 'low' | 'medium' | 'high'
+  pressureResponse: 'positive' | 'neutral' | 'negative'
+  accountabilityPreference: 'solo' | 'partner' | 'group'
+  insights: string[]
+  recommendedApproach: string
+}
+
 // Input type for API (allows lbs or kg)
 export interface BaselineAssessmentInput {
   // Physical baselines

@@ -4,6 +4,7 @@ const navItems = [
   { path: '/', label: 'Dashboard', icon: '◈' },
   { path: '/quests', label: 'Quests', icon: '⚔' },
   { path: '/dungeons', label: 'Dungeons', icon: '🏰' },
+  { path: '/guild', label: 'Guild', icon: '⚑' },
   { path: '/titles', label: 'Titles', icon: '🏆' },
   { path: '/leaderboard', label: 'Rankings', icon: '◊' },
   { path: '/stats', label: 'Stats', icon: '◆' },
