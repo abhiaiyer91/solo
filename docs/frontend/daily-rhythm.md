@@ -180,7 +180,7 @@ If user has opted in AND significant quests remain incomplete:
 
 **Push Notification** (5 PM):
 ```
-Solo Leveling
+Journey
 ──────────────
 Movement: 6,847 / 10,000
 The System is recording.

@@ -9,7 +9,7 @@ interface ErrorFallbackProps {
 
 /**
  * Fallback UI displayed when an error is caught by ErrorBoundary.
- * Styled to match the Solo Leveling System theme.
+ * Styled to match the Journey System theme.
  */
 export function ErrorFallback({
   error,

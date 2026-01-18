@@ -1,6 +1,6 @@
 # Content Requirements — Writer's Brief
 
-This document lists every piece of narrative content needed for the Solo Leveling Fitness Quest System. Use this as a checklist for content creation.
+This document lists every piece of narrative content needed for the Journey Fitness Quest System. Use this as a checklist for content creation.
 
 ---
 

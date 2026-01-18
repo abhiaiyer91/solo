@@ -10,11 +10,11 @@ services:
     environment:
       POSTGRES_USER: solo
       POSTGRES_PASSWORD: solopassword
-      POSTGRES_DB: solo_leveling
+      POSTGRES_DB: journey
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U solo -d solo_leveling']
+      test: ['CMD-SHELL', 'pg_isready -U solo -d journey']
       interval: 5s
       timeout: 5s
       retries: 5

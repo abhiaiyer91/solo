@@ -6,7 +6,7 @@ Bosses are **identity checkpoints** defeated through sustained compliance over w
 
 ## Philosophy
 
-Boss fights in Solo Leveling Fitness are not about strength - they're about **consistency over time**. Each boss represents a psychological pattern that has derailed your progress before.
+Boss fights in Journey are not about strength - they're about **consistency over time**. Each boss represents a psychological pattern that has derailed your progress before.
 
 ---
 

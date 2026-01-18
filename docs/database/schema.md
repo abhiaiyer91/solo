@@ -1,6 +1,6 @@
 # Database Schema
 
-Complete Drizzle ORM schema for the Solo Leveling Fitness Quest System.
+Complete Drizzle ORM schema for the Journey Fitness Quest System.
 
 ---
 

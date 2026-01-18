@@ -1,6 +1,6 @@
 # Core Concepts
 
-The Solo Leveling Fitness Quest System transforms real-world health activities into an RPG progression system. This document covers the foundational game design.
+The Journey Fitness Quest System transforms real-world health activities into an RPG progression system. This document covers the foundational game design.
 
 ---
 

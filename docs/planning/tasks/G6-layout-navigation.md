@@ -211,7 +211,7 @@ export function AppShell({ children }: AppShellProps) {
           {/* Logo / Brand */}
           <div className="flex items-center gap-4">
             <h1 className="text-lg font-bold text-system-blue tracking-wider">
-              SOLO LEVELING
+              JOURNEY
             </h1>
             <Navbar />
           </div>
@@ -257,7 +257,7 @@ export function AppShell({ children }: AppShellProps) {
       {/* Footer */}
       <footer className="border-t border-system-border py-4">
         <div className="max-w-7xl mx-auto px-4 text-center text-system-text-muted text-xs">
-          Solo Leveling Fitness Quest System
+          Journey Fitness Quest System
         </div>
       </footer>
     </div>

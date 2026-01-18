@@ -1,4 +1,4 @@
-# Solo Leveling Fitness Quest System — Master Technical Specification
+# Journey Fitness Quest System — Master Technical Specification
 
 ## Tech Stack
 
@@ -3222,11 +3222,11 @@ NODE_ENV=development
 
 ---
 
-## 14. Frontend Design Vision — Solo Leveling Aesthetic
+## 14. Frontend Design Vision — System Aesthetic
 
 ### Design Philosophy
 
-The UI embodies the **cold, observational System** from Solo Leveling. It does not encourage. It does not celebrate. It **records**. The interface feels like accessing a hidden layer of reality — holographic windows floating in darkness, stats rendered in stark blue light, progress measured with clinical precision.
+The UI embodies the **cold, observational System**. It does not encourage. It does not celebrate. It **records**. The interface feels like accessing a hidden layer of reality — holographic windows floating in darkness, stats rendered in stark blue light, progress measured with clinical precision.
 
 **Core Principles:**
 1. **The System is indifferent** — UI feels alien, detached, almost unsettling

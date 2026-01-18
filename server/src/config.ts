@@ -1,5 +1,5 @@
 /**
- * Centralized configuration for the Solo Leveling server
+ * Centralized configuration for the Journey server
  *
  * All environment variables and configuration values should be accessed through this module
  * to ensure consistency and make it easy to identify what config is required.

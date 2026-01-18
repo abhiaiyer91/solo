@@ -23,10 +23,10 @@ const glowColors = {
 };
 
 /**
- * SystemWindow - Core UI component for Solo Leveling aesthetic
+ * SystemWindow - Core UI component for Journey aesthetic
  * 
  * A panel component with the characteristic blue glow and dark background
- * that matches the System interface from Solo Leveling.
+ * that matches the System interface theme.
  */
 export function SystemWindow({
   children,

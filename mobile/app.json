@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Solo Leveling",
-    "slug": "solo-leveling",
+    "name": "Journey",
+    "slug": "journey-fitness",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "solo-leveling",
+    "scheme": "journey-fitness",
     "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splash.png",
@@ -15,10 +15,10 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.platformfirst.sololeveling",
+      "bundleIdentifier": "com.platformfirst.journey",
       "infoPlist": {
-        "NSHealthShareUsageDescription": "Solo Leveling uses HealthKit to track your fitness progress and complete quests.",
-        "NSHealthUpdateUsageDescription": "Solo Leveling syncs your workout data to track quest progress."
+        "NSHealthShareUsageDescription": "Journey uses HealthKit to track your fitness progress and complete quests.",
+        "NSHealthUpdateUsageDescription": "Journey syncs your workout data to track quest progress."
       }
     },
     "android": {
@@ -26,7 +26,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0A0A0F"
       },
-      "package": "com.platformfirst.sololeveling"
+      "package": "com.platformfirst.journey"
     },
     "web": {
       "bundler": "metro",

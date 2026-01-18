@@ -1,7 +1,7 @@
-# fly.toml - Fly.io configuration for Solo Leveling API
+# fly.toml - Fly.io configuration for Journey API
 # See https://fly.io/docs/reference/configuration/ for details
 
-app = "solo-api"
+app = "journey-api"
 primary_region = "sjc"  # San Jose - adjust based on user location
 
 [build]

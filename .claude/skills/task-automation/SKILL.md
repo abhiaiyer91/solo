@@ -7,7 +7,7 @@ user-invocable: true
 
 # Task Automation Skill
 
-Automated task execution system for the Solo Leveling project. Manages a task manifest and executes tasks via parallel agents.
+Automated task execution system for the Journey project. Manages a task manifest and executes tasks via parallel agents.
 
 ## When Claude Should Use This Skill
 

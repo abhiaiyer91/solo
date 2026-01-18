@@ -1,7 +1,7 @@
 import { toast as sonnerToast, Toaster as SonnerToaster } from 'sonner'
 
 /**
- * Custom toast functions styled for Solo Leveling theme
+ * Custom toast functions styled for Journey theme
  */
 export const toast = {
   /**

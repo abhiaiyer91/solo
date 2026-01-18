@@ -13,7 +13,7 @@ Add in-app toast notifications for user feedback on actions.
 - [ ] Toast provider wrapped around app
 - [ ] Success toasts for quest completion
 - [ ] Error toasts for API failures
-- [ ] Toast styling matches Solo Leveling theme
+- [ ] Toast styling matches Journey theme
 
 ## Files to Create/Modify
 | File | Action | Description |

@@ -1,4 +1,4 @@
-# Solo Leveling Fitness Quest System — Task Decomposition
+# Journey Fitness Quest System — Task Decomposition
 
 This document breaks down the MASTER_SPEC.md into actionable engineering tasks organized by phase and domain.
 

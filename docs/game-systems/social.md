@@ -6,7 +6,7 @@ The System observes many players. It does not create connections between them. B
 
 ## Philosophy
 
-Social features in Solo Leveling Fitness must balance:
+Social features in Journey must balance:
 
 1. **Accountability** - Others knowing creates commitment
 2. **Competition** - Rankings drive some players
@@ -631,7 +631,7 @@ export const leaderboardPrefs = pgTable("leaderboard_prefs", {
 
 ## Summary
 
-Social features in Solo Leveling Fitness:
+Social features in Journey:
 
 1. **Shadows** - Anonymous comparisons create ambient awareness
 2. **Accountability** - Opt-in visibility with one partner

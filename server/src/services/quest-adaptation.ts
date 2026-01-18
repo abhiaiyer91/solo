@@ -1,4 +1,4 @@
-import { eq, and, desc, gte, sql } from 'drizzle-orm'
+import { eq, and, desc, gte } from 'drizzle-orm'
 import { dbClient as db } from '../db'
 import {
   adaptedTargets,
@@ -26,16 +26,6 @@ const TARGET_BOUNDS: Record<string, { min: number; max: number }> = {
   CALORIES_BURNED: { min: 100, max: 1000 },
 }
 
-// Default targets when no baseline exists
-const DEFAULT_TARGETS: Record<string, number> = {
-  STEPS: 10000,
-  WORKOUT_MINUTES: 30,
-  PROTEIN_GRAMS: 150,
-  SLEEP_HOURS: 7,
-  ACTIVE_MINUTES: 30,
-  CALORIES_BURNED: 300,
-}
-
 /**
  * Get adapted target for a user's quest
  * Returns the personalized target or creates one from baseline
@@ -60,14 +50,15 @@ export async function getAdaptedTarget(
     where: eq(questTemplates.id, templateId),
   })
 
-  if (!template) {
+  if (!template || !template.requirement) {
     return null
   }
 
-  const initialTarget = await calculateInitialTarget(userId, template.requirement)
-  const baseTarget = getTargetFromRequirement(template.requirement)
+  const requirement = template.requirement as RequirementDSL
+  const initialTarget = await calculateInitialTarget(userId, requirement)
+  const baseTarget = getTargetFromRequirement(requirement)
 
-  const [newTarget] = await db
+  const [newTarget] = await requireDb()
     .insert(adaptedTargets)
     .values({
       userId,
@@ -77,14 +68,14 @@ export async function getAdaptedTarget(
     })
     .returning()
 
-  return newTarget
+  return newTarget ?? null
 }
 
 /**
  * Get all adapted targets for a user
  */
 export async function getAllAdaptedTargets(userId: string): Promise<AdaptedTarget[]> {
-  return db.query.adaptedTargets.findMany({
+  return requireDb().query.adaptedTargets.findMany({
     where: eq(adaptedTargets.userId, userId),
   })
 }
@@ -108,13 +99,13 @@ async function calculateInitialTarget(
   switch (metric) {
     case 'steps': {
       // Start 20% above baseline, capped at default
-      const stepsTarget = Math.ceil((baseline.dailyStepsBaseline || 5000) * 1.2)
-      return Math.min(stepsTarget, DEFAULT_TARGETS.STEPS)
+      const stepsTarget = Math.ceil((baseline.dailyStepsBaseline ?? 5000) * 1.2)
+      return Math.min(stepsTarget, 10000)
     }
 
     case 'workout_minutes': {
       // Based on current workout frequency
-      const workoutsPerWeek = baseline.workoutsPerWeek || 0
+      const workoutsPerWeek = baseline.workoutsPerWeek ?? 0
       if (workoutsPerWeek >= 5) return 45
       if (workoutsPerWeek >= 3) return 30
       if (workoutsPerWeek >= 1) return 20
@@ -123,20 +114,20 @@ async function calculateInitialTarget(
 
     case 'protein_grams': {
       // Start 10% above current intake
-      const proteinTarget = Math.ceil((baseline.proteinGramsBaseline || 100) * 1.1)
-      return Math.min(proteinTarget, DEFAULT_TARGETS.PROTEIN_GRAMS)
+      const proteinTarget = Math.ceil((baseline.proteinGramsBaseline ?? 100) * 1.1)
+      return Math.min(proteinTarget, 150)
     }
 
     case 'sleep_hours': {
       // Push toward optimal 7-8 hours gradually
-      const sleepBaseline = baseline.sleepHoursBaseline || 6
+      const sleepBaseline = baseline.sleepHoursBaseline ?? 6
       if (sleepBaseline >= 7) return 7
       return Math.min(sleepBaseline + 0.5, 7)
     }
 
     case 'active_minutes': {
       // Based on steps baseline as proxy for activity
-      const stepsBaseline = baseline.dailyStepsBaseline || 5000
+      const stepsBaseline = baseline.dailyStepsBaseline ?? 5000
       if (stepsBaseline >= 12000) return 60
       if (stepsBaseline >= 8000) return 45
       if (stepsBaseline >= 5000) return 30
@@ -210,7 +201,7 @@ export async function adaptTarget(
 
   // Update if changed
   if (newTarget !== target.adaptedTarget) {
-    await db
+    await requireDb()
       .update(adaptedTargets)
       .set({
         adaptedTarget: newTarget,
@@ -251,7 +242,7 @@ export async function setManualTarget(
     throw new Error(`Target must be between ${bounds.min} and ${bounds.max}`)
   }
 
-  const [updated] = await db
+  const [updated] = await requireDb()
     .update(adaptedTargets)
     .set({
       adaptedTarget: newTarget,
@@ -260,6 +251,10 @@ export async function setManualTarget(
     })
     .where(eq(adaptedTargets.id, existing.id))
     .returning()
+
+  if (!updated) {
+    throw new Error('Failed to update target')
+  }
 
   return updated
 }
@@ -277,7 +272,7 @@ export async function clearManualOverride(
     throw new Error('No adapted target found')
   }
 
-  const [updated] = await db
+  const [updated] = await requireDb()
     .update(adaptedTargets)
     .set({
       manualOverride: false,
@@ -285,6 +280,10 @@ export async function clearManualOverride(
     })
     .where(eq(adaptedTargets.id, existing.id))
     .returning()
+
+  if (!updated) {
+    throw new Error('Failed to clear override')
+  }
 
   return updated
 }
@@ -304,7 +303,7 @@ async function getRecentPerformance(
 }> {
   const cutoffDate = new Date()
   cutoffDate.setDate(cutoffDate.getDate() - days)
-  const cutoffDateStr = cutoffDate.toISOString().split('T')[0]
+  const cutoffDateStr = cutoffDate.toISOString().split('T')[0]!
 
   const recentLogs = await requireDb().query.questLogs.findMany({
     where: and(
@@ -319,7 +318,7 @@ async function getRecentPerformance(
     return { completionCount: 0, completionRate: 0, averageAchievement: 0 }
   }
 
-  const completed = recentLogs.filter((log) => log.status === 'COMPLETE').length
+  const completed = recentLogs.filter((log) => log.status === 'COMPLETED').length
   const completionRate = completed / recentLogs.length
 
   // Calculate average achievement percentage
@@ -341,7 +340,10 @@ function getMetricFromRequirement(requirement: RequirementDSL): string {
     return requirement.metric
   }
   if (requirement.type === 'compound' && requirement.requirements.length > 0) {
-    return getMetricFromRequirement(requirement.requirements[0])
+    const firstReq = requirement.requirements[0]
+    if (firstReq) {
+      return getMetricFromRequirement(firstReq)
+    }
   }
   return 'unknown'
 }
@@ -354,7 +356,10 @@ function getTargetFromRequirement(requirement: RequirementDSL): number {
     return 1 // Boolean requirements have a target of 1 (true)
   }
   if (requirement.type === 'compound' && requirement.requirements.length > 0) {
-    return getTargetFromRequirement(requirement.requirements[0])
+    const firstReq = requirement.requirements[0]
+    if (firstReq) {
+      return getTargetFromRequirement(firstReq)
+    }
   }
   return 0
 }
@@ -364,11 +369,11 @@ async function getMetricFromTemplate(templateId: string): Promise<string> {
     where: eq(questTemplates.id, templateId),
   })
 
-  if (!template) {
+  if (!template || !template.requirement) {
     return 'unknown'
   }
 
-  return getMetricFromRequirement(template.requirement)
+  return getMetricFromRequirement(template.requirement as RequirementDSL)
 }
 
 /**

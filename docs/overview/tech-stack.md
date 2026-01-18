@@ -9,7 +9,7 @@
 | **Health Data** | Apple HealthKit (react-native-health) | Steps, workouts, sleep from Apple Watch |
 | **Nutrition AI** | LogMeal API | Photo-based food recognition |
 | **State** | Zustand + TanStack Query | Client state + server cache |
-| **Animation** | Framer Motion (web) / Reanimated (mobile) | Solo Leveling visual effects |
+| **Animation** | Framer Motion (web) / Reanimated (mobile) | System visual effects |
 | **Auth** | Better Auth | Session-based authentication |
 | **Backend** | Hono + TypeScript | Fast, type-safe API server |
 | **AI/Rules** | Mastra Agent Framework | Quest evaluation, XP calculation |

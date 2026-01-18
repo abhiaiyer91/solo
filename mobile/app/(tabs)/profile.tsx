@@ -185,7 +185,7 @@ export default function ProfileScreen() {
 
       {/* Version */}
       <Text style={{ color: '#475569', fontSize: 12, textAlign: 'center', marginBottom: 20 }}>
-        Solo Leveling v1.0.0
+        Journey v1.0.0
       </Text>
     </ScrollView>
   );

@@ -16,8 +16,9 @@ export const anthropic = anthropicApiKey
 // Default model for narrative generation
 export const model = anthropic?.('claude-sonnet-4-20250514') ?? null
 
-// Build agents object
-const agents: Record<string, NonNullable<typeof narratorAgent>> = {}
+// Build agents object - use 'any' to avoid strict type conflicts between different agent types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const agents: Record<string, any> = {}
 if (anthropicApiKey && narratorAgent) {
   agents.narrator = narratorAgent
 }

@@ -48,7 +48,7 @@ export default function LoginScreen() {
             fontWeight: '700', 
             letterSpacing: 2 
           }}>
-            SOLO LEVELING
+            JOURNEY
           </Text>
           <Text style={{ color: '#64748B', fontSize: 14, marginTop: 8, letterSpacing: 1 }}>
             ARISE, HUNTER

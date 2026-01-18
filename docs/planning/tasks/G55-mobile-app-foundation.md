@@ -16,7 +16,7 @@ Initialize the React Native + Expo mobile application with the core structure, n
 - [ ] Expo Router configured with tab navigation
 - [ ] API client configured (reuse patterns from web)
 - [ ] Auth flow working (login, signup, session persistence)
-- [ ] Basic SystemWindow component with Solo Leveling aesthetic
+- [ ] Basic SystemWindow component with Journey aesthetic
 - [ ] Environment configuration for dev/staging/prod
 - [ ] EAS Build configured for iOS
 

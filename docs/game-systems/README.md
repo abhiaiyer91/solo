@@ -1,6 +1,6 @@
 # Game Systems
 
-Documentation for all gameplay mechanics in the Solo Leveling Fitness Quest System.
+Documentation for all gameplay mechanics in the Journey Fitness Quest System.
 
 ---
 

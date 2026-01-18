@@ -19,6 +19,7 @@ export const xpEventSourceEnum = pgEnum('xp_event_source', [
   'SEASON_BONUS',
   'TITLE_BONUS',
   'MANUAL_ADJUSTMENT',
+  'BODY_COMPOSITION',
 ])
 
 export const modifierTypeEnum = pgEnum('modifier_type', [

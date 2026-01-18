@@ -1,8 +1,8 @@
-# Solo Leveling Fitness Quest System — Documentation
+# Journey Fitness Quest System — Documentation
 
 > *"The System does not encourage. It does not celebrate. It records."*
 
-A gamified fitness application inspired by Solo Leveling, where real-world health data automatically drives quest completion, XP gains, and character progression.
+A gamified fitness application where real-world health data automatically drives quest completion, XP gains, and character progression.
 
 ---
 

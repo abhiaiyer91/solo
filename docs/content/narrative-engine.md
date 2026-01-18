@@ -1,6 +1,6 @@
 # Narrative Engine Architecture
 
-The Solo Leveling Fitness Quest System requires a **dynamic narrative engine** that delivers personalized, contextual storylines. The System needs to *know* the player and speak to their specific journey.
+The Journey Fitness Quest System requires a **dynamic narrative engine** that delivers personalized, contextual storylines. The System needs to *know* the player and speak to their specific journey.
 
 ---
 

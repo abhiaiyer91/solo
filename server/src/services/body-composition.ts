@@ -11,7 +11,7 @@ import {
   weeklyBodySummaries,
   users 
 } from '../db/schema'
-import { eq, and, gte, lte, desc } from 'drizzle-orm'
+import { eq, and, gte, lte } from 'drizzle-orm'
 import { createXPEvent } from './xp'
 
 function requireDb() {
@@ -101,7 +101,7 @@ export async function logBodyComposition(
   userId: string,
   input: LogBodyCompositionInput
 ): Promise<typeof bodyCompositionLogs.$inferSelect> {
-  const date = input.date ?? new Date().toISOString().split('T')[0]
+  const date = input.date ?? new Date().toISOString().split('T')[0]!
   
   // Calculate net calories if we have the data
   let netCalories: number | null = null
@@ -122,27 +122,32 @@ export async function logBodyComposition(
     ))
     .limit(1)
   
-  if (existing.length > 0) {
+  const existingEntry = existing[0]
+  
+  if (existingEntry) {
     // Update existing entry
     const [updated] = await requireDb()
       .update(bodyCompositionLogs)
       .set({
-        weight: input.weight ?? existing[0].weight,
-        caloriesConsumed: input.caloriesConsumed ?? existing[0].caloriesConsumed,
-        caloriesBurned: input.caloriesBurned ?? existing[0].caloriesBurned,
-        basalMetabolicRate: input.basalMetabolicRate ?? existing[0].basalMetabolicRate,
-        netCalories: netCalories ?? existing[0].netCalories,
-        bodyFatPercent: input.bodyFatPercent ?? existing[0].bodyFatPercent,
-        muscleMass: input.muscleMass ?? existing[0].muscleMass,
-        waterPercent: input.waterPercent ?? existing[0].waterPercent,
-        boneMass: input.boneMass ?? existing[0].boneMass,
-        source: input.source ?? existing[0].source,
-        notes: input.notes ?? existing[0].notes,
+        weight: input.weight ?? existingEntry.weight,
+        caloriesConsumed: input.caloriesConsumed ?? existingEntry.caloriesConsumed,
+        caloriesBurned: input.caloriesBurned ?? existingEntry.caloriesBurned,
+        basalMetabolicRate: input.basalMetabolicRate ?? existingEntry.basalMetabolicRate,
+        netCalories: netCalories ?? existingEntry.netCalories,
+        bodyFatPercent: input.bodyFatPercent ?? existingEntry.bodyFatPercent,
+        muscleMass: input.muscleMass ?? existingEntry.muscleMass,
+        waterPercent: input.waterPercent ?? existingEntry.waterPercent,
+        boneMass: input.boneMass ?? existingEntry.boneMass,
+        source: input.source ?? existingEntry.source,
+        notes: input.notes ?? existingEntry.notes,
         updatedAt: new Date(),
       })
-      .where(eq(bodyCompositionLogs.id, existing[0].id))
+      .where(eq(bodyCompositionLogs.id, existingEntry.id))
       .returning()
     
+    if (!updated) {
+      throw new Error('Failed to update body composition log')
+    }
     return updated
   }
   
@@ -166,6 +171,9 @@ export async function logBodyComposition(
     })
     .returning()
   
+  if (!created) {
+    throw new Error('Failed to create body composition log')
+  }
   return created
 }
 
@@ -178,7 +186,7 @@ export async function getBodyCompositionProgress(
 ): Promise<BodyCompositionProgress> {
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - days)
-  const startDateStr = startDate.toISOString().split('T')[0]
+  const startDateStr = startDate.toISOString().split('T')[0]!
   
   const logs = await requireDb()
     .select({
@@ -245,7 +253,7 @@ export async function getBodyCompositionProgress(
 export async function getTodayLog(
   userId: string
 ): Promise<typeof bodyCompositionLogs.$inferSelect | null> {
-  const today = new Date().toISOString().split('T')[0]
+  const today = new Date().toISOString().split('T')[0]!
   
   const [log] = await requireDb()
     .select()
@@ -267,7 +275,7 @@ function getWeekStart(date: Date = new Date()): string {
   const day = d.getDay()
   const diff = d.getDate() - day + (day === 0 ? -6 : 1)
   d.setDate(diff)
-  return d.toISOString().split('T')[0]
+  return d.toISOString().split('T')[0]!
 }
 
 /**
@@ -278,7 +286,7 @@ function getWeekEnd(date: Date = new Date()): string {
   const day = d.getDay()
   const diff = d.getDate() + (day === 0 ? 0 : 7 - day)
   d.setDate(diff)
-  return d.toISOString().split('T')[0]
+  return d.toISOString().split('T')[0]!
 }
 
 /**
@@ -421,7 +429,7 @@ export async function getWeightHistory(
 ): Promise<Array<{ date: string; weight: number }>> {
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - days)
-  const startDateStr = startDate.toISOString().split('T')[0]
+  const startDateStr = startDate.toISOString().split('T')[0]!
   
   const logs = await requireDb()
     .select({

@@ -6,7 +6,7 @@ This document maps the complete player experience from first login through maste
 
 ## Journey Philosophy
 
-The player journey follows the **Solo Leveling** progression archetype:
+The player journey follows the **Hero's Journey** progression archetype:
 
 1. **Awakening** - Realize you've been asleep
 2. **Foundation** - Build basic habits through repetition

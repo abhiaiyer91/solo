@@ -123,7 +123,7 @@ export function Login() {
         transition={{ delay: 0.5 }}
         className="mt-8 text-system-text-muted/50 text-xs"
       >
-        Solo Leveling Fitness Quest System v1.0
+        Journey Fitness Quest System v1.0
       </motion.p>
     </div>
   )
