@@ -9,6 +9,13 @@ import {
 } from '../db/schema'
 import { getBaselineAssessment } from './baseline'
 
+function requireDb() {
+  if (!db) {
+    throw new Error('Database connection required for quest adaptation service')
+  }
+  return db
+}
+
 // Minimum and maximum targets by quest type
 const TARGET_BOUNDS: Record<string, { min: number; max: number }> = {
   STEPS: { min: 3000, max: 15000 },
@@ -37,7 +44,7 @@ export async function getAdaptedTarget(
   userId: string,
   templateId: string
 ): Promise<AdaptedTarget | null> {
-  const existing = await db.query.adaptedTargets.findFirst({
+  const existing = await requireDb().query.adaptedTargets.findFirst({
     where: and(
       eq(adaptedTargets.userId, userId),
       eq(adaptedTargets.questTemplateId, templateId)
@@ -49,7 +56,7 @@ export async function getAdaptedTarget(
   }
 
   // No adapted target exists - create one from baseline
-  const template = await db.query.questTemplates.findFirst({
+  const template = await requireDb().query.questTemplates.findFirst({
     where: eq(questTemplates.id, templateId),
   })
 
@@ -299,7 +306,7 @@ async function getRecentPerformance(
   cutoffDate.setDate(cutoffDate.getDate() - days)
   const cutoffDateStr = cutoffDate.toISOString().split('T')[0]
 
-  const recentLogs = await db.query.questLogs.findMany({
+  const recentLogs = await requireDb().query.questLogs.findMany({
     where: and(
       eq(questLogs.userId, userId),
       eq(questLogs.templateId, templateId),
@@ -353,7 +360,7 @@ function getTargetFromRequirement(requirement: RequirementDSL): number {
 }
 
 async function getMetricFromTemplate(templateId: string): Promise<string> {
-  const template = await db.query.questTemplates.findFirst({
+  const template = await requireDb().query.questTemplates.findFirst({
     where: eq(questTemplates.id, templateId),
   })
 
