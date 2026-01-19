@@ -163,4 +163,13 @@ export const queryKeys = {
   quest: (id: string) => ['quests', id] as const,
 
   healthData: () => ['health'] as const,
+
+  // Fitness tests
+  fitnessTests: () => ['fitness-tests'] as const,
+  fitnessTestsMandatory: () => ['fitness-tests', 'mandatory'] as const,
+  fitnessTestsStatus: () => ['fitness-tests', 'mandatory', 'status'] as const,
+  fitnessTestsNext: () => ['fitness-tests', 'mandatory', 'next'] as const,
+  fitnessTestsHistory: () => ['fitness-tests', 'history'] as const,
+  fitnessTestsPersonalRecords: () => ['fitness-tests', 'personal-records'] as const,
+  fitnessTestsStats: () => ['fitness-tests', 'stats'] as const,
 };
