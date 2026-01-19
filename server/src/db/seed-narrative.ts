@@ -1784,6 +1784,679 @@ Both are recorded.`,
   },
 ]
 
+// Detox Dungeons - Body reset and cleansing challenges
+const detoxDungeonContent: NarrativeContentData[] = [
+  // The Cleanse - 3-day juice cleanse
+  {
+    key: 'dungeon.a.cleanse.entry',
+    category: 'DUNGEON',
+    content: `A-RANK DUNGEON: The Cleanse
+
+3 days. Liquids only. No exceptions.
+
+Duration: 72 hours from entry
+Reward: 4x XP + Body Reset bonus
+Requirements:
+- Juice, smoothies, broth, water only
+- No solid food
+- Minimum 2500ml liquid daily
+- Log each meal
+
+The System has observed bloat in your records.
+Inflammation. Excess. Accumulation.
+
+This dungeon strips away the unnecessary.
+What remains is clarity.
+
+[ENTER] [DECLINE]`,
+  },
+  {
+    key: 'dungeon.a.cleanse.day1',
+    category: 'DUNGEON',
+    content: `THE CLEANSE - DAY 1
+
+First 24 hours initiated.
+
+The body will resist. This is expected.
+Hunger signals are not emergencies.
+They are negotiations.
+
+Decline them all.
+
+Hydration logged: {{hydration_ml}}ml
+Meals logged: {{meals_logged}}
+Status: {{status}}
+
+48 hours remain.`,
+  },
+  {
+    key: 'dungeon.a.cleanse.day2',
+    category: 'DUNGEON',
+    content: `THE CLEANSE - DAY 2
+
+48 hours without solid food.
+
+The body has begun to adapt.
+Hunger diminishes. Clarity increases.
+This is the inflection point.
+
+Most who fail, fail on Day 2.
+Not from weakness of body.
+From weakness of resolve.
+
+Hydration logged: {{hydration_ml}}ml
+Meals logged: {{meals_logged}}
+Status: {{status}}
+
+24 hours remain.`,
+  },
+  {
+    key: 'dungeon.a.cleanse.day3',
+    category: 'DUNGEON',
+    content: `THE CLEANSE - DAY 3
+
+Final phase.
+
+The body is lighter. The mind is clearer.
+Inflammation subsiding. Bloat releasing.
+
+Do not break now.
+You have invested 48 hours.
+12 more to claim victory.
+
+Hydration logged: {{hydration_ml}}ml
+Meals logged: {{meals_logged}}
+Status: {{status}}
+
+The finish line is visible.`,
+  },
+  {
+    key: 'dungeon.a.cleanse.complete',
+    category: 'DUNGEON',
+    content: `A-RANK DUNGEON CLEARED
+
+The Cleanse complete.
+72 hours. Zero solid food. Complete discipline.
+
+RESULTS:
+- Bloat reduction: Significant
+- Inflammation markers: Decreased
+- Digestive reset: Complete
+- Mental clarity: Enhanced
+
+Bonus XP: +300% applied
+Body Reset Bonus: Activated
+
+The System has observed purification.
+What enters the body next matters.
+Choose wisely.
+
+You have earned the right to rebuild cleanly.`,
+  },
+  {
+    key: 'dungeon.a.cleanse.failed',
+    category: 'DUNGEON',
+    content: `A-RANK DUNGEON FAILED
+
+The Cleanse incomplete.
+Solid food consumed on Day {{failed_day}}.
+
+The body's demands were louder than your resolve.
+This time.
+
+The dungeon resets.
+When you are ready to prioritize clarity over comfort,
+return.`,
+  },
+
+  // The 48-Hour Reset - 2-day fast
+  {
+    key: 'dungeon.s.fast48.entry',
+    category: 'DUNGEON',
+    content: `S-RANK DUNGEON: The 48-Hour Reset
+
+No food for 48 hours. Water and electrolytes only.
+
+Duration: 48 hours from entry
+Reward: 500 bonus XP + Autophagy bonus
+Requirements:
+- Zero caloric intake
+- Water, black coffee, plain tea permitted
+- Electrolyte supplementation recommended
+- Light activity only
+
+WARNING: This dungeon is not for beginners.
+Consult the body's current state.
+Fasting is a tool. Used incorrectly, it damages.
+Used correctly, it transforms.
+
+The System does not recommend.
+The System presents.
+
+Autophagy begins around hour 18.
+By hour 48, cellular cleanup is substantial.
+Old, damaged cells consumed. New growth enabled.
+
+Are you ready to reset at the cellular level?
+
+[ENTER] [DECLINE]`,
+  },
+  {
+    key: 'dungeon.s.fast48.phase1',
+    category: 'DUNGEON',
+    content: `THE 48-HOUR RESET - HOURS 0-12
+
+Phase 1: Glycogen Depletion
+
+The body burns through stored glucose.
+This is the easy part.
+Hunger appears and disappears in waves.
+
+Current hour: {{current_hour}}
+Hydration: {{hydration_ml}}ml
+Status: Active
+
+The real challenge begins after hour 16.
+Prepare.`,
+  },
+  {
+    key: 'dungeon.s.fast48.phase2',
+    category: 'DUNGEON',
+    content: `THE 48-HOUR RESET - HOURS 12-24
+
+Phase 2: Metabolic Shift
+
+Glycogen depleted. Ketosis initiating.
+The body is switching fuel sources.
+Some discomfort is expected. Fatigue. Mental fog.
+
+This is temporary.
+It is the bridge between states.
+
+Current hour: {{current_hour}}
+Hydration: {{hydration_ml}}ml
+Status: {{status}}
+
+Cross the bridge. Do not turn back.`,
+  },
+  {
+    key: 'dungeon.s.fast48.phase3',
+    category: 'DUNGEON',
+    content: `THE 48-HOUR RESET - HOURS 24-36
+
+Phase 3: Autophagy Active
+
+The cellular cleanup has begun.
+Damaged proteins being recycled.
+Cellular debris cleared.
+Inflammation reducing.
+
+This is why you came.
+The suffering of the first day has purpose.
+
+Current hour: {{current_hour}}
+Hydration: {{hydration_ml}}ml
+Status: {{status}}
+
+You are being rebuilt from the inside.`,
+  },
+  {
+    key: 'dungeon.s.fast48.phase4',
+    category: 'DUNGEON',
+    content: `THE 48-HOUR RESET - HOURS 36-48
+
+Final Phase: Deep Cleanse
+
+Energy often returns here.
+Mental clarity heightens.
+The body has fully adapted.
+
+Less than 12 hours remain.
+You have already done the hard part.
+Complete what you started.
+
+Current hour: {{current_hour}}
+Hydration: {{hydration_ml}}ml
+Status: {{status}}
+
+The reset is nearly complete.`,
+  },
+  {
+    key: 'dungeon.s.fast48.complete',
+    category: 'DUNGEON',
+    content: `S-RANK DUNGEON CLEARED
+
+The 48-Hour Reset complete.
+48 hours. Zero calories. Maximum discipline.
+
+CELLULAR REPORT:
+- Autophagy: Activated and sustained
+- Inflammation: Significantly reduced
+- Insulin sensitivity: Reset
+- Growth hormone: Elevated
+- Mental clarity: Peak
+
+Bonus XP: +500 applied
+TITLE PROGRESS: The Ascetic
+
+You have done what 99% will never attempt.
+Your body has been reset at the cellular level.
+
+IMPORTANT: Break fast gently.
+Bone broth. Light protein. Small portions.
+The body is primed for absorption.
+What you consume next shapes what you become.
+
+The System has recorded this achievement.
+It will not be forgotten.`,
+  },
+  {
+    key: 'dungeon.s.fast48.failed',
+    category: 'DUNGEON',
+    content: `S-RANK DUNGEON FAILED
+
+The 48-Hour Reset incomplete.
+Food consumed at hour {{failed_hour}}.
+
+This dungeon demands everything.
+Today, it received less.
+
+There is no shame in an S-Rank failure.
+Only data.
+
+The dungeon will wait.
+Return stronger. Or don't.
+The System records either outcome.`,
+  },
+
+  // The Purge Protocol - Heavy hydration challenge
+  {
+    key: 'dungeon.c.purge.entry',
+    category: 'DUNGEON',
+    content: `C-RANK DUNGEON: The Purge Protocol
+
+4 liters of water. One day. No exceptions.
+
+Duration: Until midnight
+Reward: 2x hydration XP + Flush bonus
+Requirements:
+- Minimum 4000ml water
+- Spread throughout day
+- Track all intake
+- Reduce sodium
+
+Water flushes toxins.
+Water reduces bloat.
+Water is the simplest intervention.
+And the most neglected.
+
+Today, you cannot neglect it.
+
+Current hydration habits: {{avg_hydration}}ml/day
+Target: 4000ml
+
+[ENTER] [DECLINE]`,
+  },
+  {
+    key: 'dungeon.c.purge.progress',
+    category: 'DUNGEON',
+    content: `THE PURGE PROTOCOL - IN PROGRESS
+
+Current intake: {{current_ml}}ml / 4000ml
+Progress: {{progress}}%
+
+Time remaining: {{hours_remaining}} hours
+
+Pace recommendation: {{pace_ml}}ml per remaining hour
+
+The body is flushing.
+Toxins releasing.
+Bloat subsiding.
+
+Continue.`,
+  },
+  {
+    key: 'dungeon.c.purge.complete',
+    category: 'DUNGEON',
+    content: `C-RANK DUNGEON CLEARED
+
+The Purge Protocol complete.
+Total intake: {{total_ml}}ml
+
+Bonus XP: +100% applied
+Flush Bonus: Activated
+
+Systems flushed:
+- Kidneys: Cleared
+- Digestive tract: Hydrated
+- Skin: Improved circulation
+- Bloat: Reduced
+
+The simplest solution executed completely.
+This is discipline made liquid.`,
+  },
+  {
+    key: 'dungeon.c.purge.failed',
+    category: 'DUNGEON',
+    content: `C-RANK DUNGEON FAILED
+
+The Purge Protocol incomplete.
+Final intake: {{final_ml}}ml / 4000ml
+
+Drinking water is not complicated.
+It requires only consistency.
+
+Try again when ready.`,
+  },
+
+  // Sugar Exile - No sugar challenge
+  {
+    key: 'dungeon.b.sugar_exile.entry',
+    category: 'DUNGEON',
+    content: `B-RANK DUNGEON: Sugar Exile
+
+7 days. Zero added sugar. Complete exile.
+
+Duration: 7 days from entry
+Reward: 3x XP + Insulin Reset bonus
+Requirements:
+- No added sugars
+- No artificial sweeteners
+- Natural fruit sugar permitted (limited)
+- Read every label
+
+Sugar is the hidden saboteur.
+In sauces. In drinks. In "healthy" foods.
+It drives inflammation. Bloat. Fatigue. Cravings.
+
+For 7 days, you exile it completely.
+
+The first 3 days will be difficult.
+Cravings will surge. Headaches possible.
+This is withdrawal. It proves the point.
+
+By Day 7, taste buds reset.
+Energy stabilizes. Inflammation drops.
+The body remembers what it was before sugar dominated.
+
+[ENTER] [DECLINE]`,
+  },
+  {
+    key: 'dungeon.b.sugar_exile.day1_2',
+    category: 'DUNGEON',
+    content: `SUGAR EXILE - DAYS 1-2
+
+The exile begins.
+
+Cravings are expected. Possibly intense.
+The body screams for what it's been conditioned to want.
+This is not need. This is addiction speaking.
+
+Current day: {{current_day}}
+Sugar consumed: {{sugar_status}}
+Status: {{status}}
+
+Do not negotiate.
+Sugar will promise just a little.
+A little is enough to restart the cycle.
+
+Complete exile. No exceptions.`,
+  },
+  {
+    key: 'dungeon.b.sugar_exile.day3_4',
+    category: 'DUNGEON',
+    content: `SUGAR EXILE - DAYS 3-4
+
+The peak of difficulty.
+
+Cravings may intensify before they fade.
+Some experience headaches. Fatigue. Irritability.
+This is the sugar leaving your system.
+
+Current day: {{current_day}}
+Sugar consumed: {{sugar_status}}
+Status: {{status}}
+
+Push through.
+The other side is clarity.`,
+  },
+  {
+    key: 'dungeon.b.sugar_exile.day5_7',
+    category: 'DUNGEON',
+    content: `SUGAR EXILE - DAYS 5-7
+
+The adaptation phase.
+
+Cravings diminishing. Energy stabilizing.
+Taste buds recalibrating.
+Food tastes different now. More nuanced. More real.
+
+Current day: {{current_day}}
+Sugar consumed: {{sugar_status}}
+Status: {{status}}
+
+You are almost free.
+Complete the exile.`,
+  },
+  {
+    key: 'dungeon.b.sugar_exile.complete',
+    category: 'DUNGEON',
+    content: `B-RANK DUNGEON CLEARED
+
+Sugar Exile complete.
+7 days. Zero added sugar. Complete reset.
+
+RESULTS:
+- Insulin sensitivity: Improved
+- Inflammation markers: Reduced
+- Energy stability: Enhanced
+- Taste sensitivity: Recalibrated
+- Cravings: Diminished
+
+Bonus XP: +200% applied
+Insulin Reset Bonus: Activated
+
+You have broken the sugar cycle.
+What you consume now will not be driven by addiction.
+It will be choice.
+
+The System recommends: maintain the exile.
+Each day of extension compounds the benefit.`,
+  },
+  {
+    key: 'dungeon.b.sugar_exile.failed',
+    category: 'DUNGEON',
+    content: `B-RANK DUNGEON FAILED
+
+Sugar Exile broken.
+Day {{failed_day}}: Sugar consumed
+
+The addiction won this round.
+It usually does.
+
+But now you know its strength.
+Now you know what you're fighting.
+
+Return when ready.
+The exile awaits.`,
+  },
+
+  // The Clean Slate - No processed food challenge
+  {
+    key: 'dungeon.b.clean_slate.entry',
+    category: 'DUNGEON',
+    content: `B-RANK DUNGEON: The Clean Slate
+
+5 days. Whole foods only. No processing.
+
+Duration: 5 days from entry
+Reward: 3x nutrition XP + Gut Reset bonus
+Requirements:
+- Single-ingredient foods only
+- No packaged/processed foods
+- No restaurants (you can't verify ingredients)
+- Cook everything yourself
+
+Modern food is engineered for consumption.
+Not for nutrition.
+Additives. Preservatives. Hidden sugars. Seed oils.
+
+For 5 days, you eat only what you can identify.
+Meat. Vegetables. Fruits. Eggs. Rice. Potatoes.
+Foods with one ingredient: themselves.
+
+Your gut will thank you.
+Your inflammation will drop.
+Your energy will stabilize.
+
+This is not a diet. This is a reset.
+
+[ENTER] [DECLINE]`,
+  },
+  {
+    key: 'dungeon.b.clean_slate.progress',
+    category: 'DUNGEON',
+    content: `THE CLEAN SLATE - IN PROGRESS
+
+Day {{current_day}} of 5
+
+Meals logged: {{meals_logged}}
+Processed foods: {{processed_count}} (target: 0)
+Status: {{status}}
+
+Every meal is a choice.
+Every ingredient is a decision.
+
+The System is watching what you consume.
+Make it count.`,
+  },
+  {
+    key: 'dungeon.b.clean_slate.complete',
+    category: 'DUNGEON',
+    content: `B-RANK DUNGEON CLEARED
+
+The Clean Slate complete.
+5 days of whole foods only.
+
+RESULTS:
+- Gut microbiome: Resetting
+- Inflammation: Reduced
+- Digestion: Improved
+- Energy: Stabilized
+- Bloat: Eliminated
+
+Bonus XP: +200% applied
+Gut Reset Bonus: Activated
+
+You have proven you can eat without processing.
+The body responds to real food differently.
+Remember this feeling.
+
+The System notes: this is how humans ate for millennia.
+Before optimization. Before engineering.
+Before convenience replaced nutrition.`,
+  },
+  {
+    key: 'dungeon.b.clean_slate.failed',
+    category: 'DUNGEON',
+    content: `B-RANK DUNGEON FAILED
+
+The Clean Slate broken.
+Processed food consumed on Day {{failed_day}}.
+
+Convenience won.
+It usually does.
+
+The dungeon remains.
+When you're ready to prioritize nutrition over convenience,
+return.`,
+  },
+
+  // Gut Reset - Fiber and probiotic challenge
+  {
+    key: 'dungeon.c.gut_reset.entry',
+    category: 'DUNGEON',
+    content: `C-RANK DUNGEON: Gut Reset
+
+3 days. High fiber. Maximum probiotics.
+
+Duration: 3 days from entry
+Reward: 2x XP + Microbiome bonus
+Requirements:
+- 40g+ fiber daily
+- Probiotic food each day (yogurt, kimchi, sauerkraut, etc.)
+- No alcohol
+- Reduced caffeine
+
+The gut is the second brain.
+When it's compromised, everything suffers.
+Mood. Energy. Immunity. Clarity.
+
+For 3 days, you feed the good bacteria.
+Starve the bad.
+Reset the balance.
+
+Fiber feeds. Probiotics populate.
+Together, they rebuild.
+
+[ENTER] [DECLINE]`,
+  },
+  {
+    key: 'dungeon.c.gut_reset.progress',
+    category: 'DUNGEON',
+    content: `GUT RESET - IN PROGRESS
+
+Day {{current_day}} of 3
+
+Fiber intake: {{fiber_g}}g (target: 40g+)
+Probiotic consumed: {{probiotic_status}}
+Status: {{status}}
+
+The microbiome is shifting.
+Good bacteria multiplying.
+Bad bacteria diminishing.
+
+Continue feeding what you want to grow.`,
+  },
+  {
+    key: 'dungeon.c.gut_reset.complete',
+    category: 'DUNGEON',
+    content: `C-RANK DUNGEON CLEARED
+
+Gut Reset complete.
+3 days of intentional microbiome support.
+
+RESULTS:
+- Fiber intake: Exceeded targets
+- Probiotic diversity: Enhanced
+- Gut flora balance: Improving
+- Digestive efficiency: Optimizing
+
+Bonus XP: +100% applied
+Microbiome Bonus: Activated
+
+The gut takes time to fully reset.
+This was the beginning.
+Continue the habits formed here.
+
+The System notes: gut health compounds.
+Each day of proper feeding strengthens the foundation.`,
+  },
+  {
+    key: 'dungeon.c.gut_reset.failed',
+    category: 'DUNGEON',
+    content: `C-RANK DUNGEON FAILED
+
+Gut Reset incomplete.
+Requirements not met on Day {{failed_day}}.
+
+The microbiome is patient.
+It will wait for another attempt.
+
+Return when ready to feed it properly.`,
+  },
+]
+
 // Philosophy fragments - System's observations on discipline and growth
 const philosophyFragments: NarrativeContentData[] = [
   {
@@ -1945,6 +2618,7 @@ export async function seedNarrativeContent(
     ...bossComfortableContent,
     ...titleContent,
     ...dungeonContent,
+    ...detoxDungeonContent,
   ]
 
   let seeded = 0
@@ -2002,4 +2676,5 @@ export const narrativeContentData = {
   bossComfortable: bossComfortableContent,
   titles: titleContent,
   dungeons: dungeonContent,
+  detoxDungeons: detoxDungeonContent,
 }
