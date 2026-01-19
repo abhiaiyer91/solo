@@ -224,3 +224,112 @@ export function getWeeklySummary(dailyStats: DailyStats[]) {
     activeDays: thisWeek.filter((d) => d.questsCompleted > 0).length,
   }
 }
+
+// ═══════════════════════════════════════════════════════════
+// NEW ANALYTICS API HOOKS
+// ═══════════════════════════════════════════════════════════
+
+export interface AnalyticsSummary {
+  period: 'week' | 'month' | 'alltime'
+  questCompletion: {
+    total: number
+    completed: number
+    rate: number
+    trend: number
+  }
+  xpEarned: {
+    total: number
+    average: number
+    trend: number
+  }
+  streaks: {
+    current: number
+    longest: number
+    perfectDays: number
+  }
+  bestDay: {
+    date: string
+    xpEarned: number
+    questsCompleted: number
+  } | null
+  statProgression: {
+    STR: number[]
+    AGI: number[]
+    VIT: number[]
+    DISC: number[]
+    dates: string[]
+  }
+}
+
+export interface TrendDataPoint {
+  date: string
+  value: number
+}
+
+export interface HeatmapCell {
+  hour: number
+  day: number
+  count: number
+  avgXP: number
+}
+
+export interface PersonalBests {
+  bestDayXP: { date: string; xp: number } | null
+  bestWeek: { startDate: string; xp: number } | null
+  mostQuestsInDay: { date: string; completed: number } | null
+}
+
+export function useAnalyticsSummary(period: 'week' | 'month' | 'alltime' = 'week') {
+  return useQuery({
+    queryKey: ['analytics', 'summary', period],
+    queryFn: async () => {
+      const response = await api.get<AnalyticsSummary>(`/api/analytics/summary?period=${period}`)
+      return response
+    },
+    staleTime: 60 * 1000,
+  })
+}
+
+export function useQuestTrend(days: number = 30) {
+  return useQuery({
+    queryKey: ['analytics', 'quests', 'trend', days],
+    queryFn: async () => {
+      const response = await api.get<{ data: TrendDataPoint[] }>(`/api/analytics/quests/trend?days=${days}`)
+      return response.data
+    },
+    staleTime: 2 * 60 * 1000,
+  })
+}
+
+export function useXPTrend(days: number = 30) {
+  return useQuery({
+    queryKey: ['analytics', 'xp', 'trend', days],
+    queryFn: async () => {
+      const response = await api.get<{ data: TrendDataPoint[] }>(`/api/analytics/xp/trend?days=${days}`)
+      return response.data
+    },
+    staleTime: 2 * 60 * 1000,
+  })
+}
+
+export function useActivityHeatmap(days: number = 90) {
+  return useQuery({
+    queryKey: ['analytics', 'activity', 'heatmap', days],
+    queryFn: async () => {
+      const response = await api.get<{ data: HeatmapCell[] }>(`/api/analytics/activity/heatmap?days=${days}`)
+      return response.data
+    },
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function usePersonalBests() {
+  return useQuery({
+    queryKey: ['analytics', 'personal-bests'],
+    queryFn: async () => {
+      const response = await api.get<PersonalBests>('/api/analytics/personal-bests')
+      return response
+    },
+    staleTime: 5 * 60 * 1000,
+  })
+}

@@ -85,7 +85,7 @@ export async function syncHealthData(): Promise<HealthSyncResult> {
     }
 
     // Send to backend
-    const response = await api.post<HealthSyncResponse>('/api/health/sync', request)
+    const response = await api.post<HealthSyncResponse>('/api/sync', request)
 
     return {
       success: true,

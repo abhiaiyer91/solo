@@ -61,11 +61,11 @@ function HeaderRight() {
           {player?.currentXP || 0} XP
         </Text>
       </View>
-      {player?.currentStreak && player.currentStreak > 0 && (
+      {player?.currentStreak != null && player.currentStreak > 0 ? (
         <View style={{
           flexDirection: 'row',
           alignItems: 'center',
-          backgroundColor: '#FBBF24/20',
+          backgroundColor: 'rgba(251, 191, 36, 0.2)',
           paddingHorizontal: 6,
           paddingVertical: 2,
           borderRadius: 8,
@@ -75,7 +75,7 @@ function HeaderRight() {
             {player.currentStreak}
           </Text>
         </View>
-      )}
+      ) : null}
     </View>
   );
 }

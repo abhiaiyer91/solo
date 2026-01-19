@@ -294,6 +294,8 @@ function buildNarrativePrompt(
     parts.push('\nPlayer context:')
     parts.push(`- Level: ${playerContext.level}`)
     parts.push(`- Current streak: ${playerContext.currentStreak} days`)
+    parts.push(`- Days since start: ${playerContext.daysSinceStart}`)
+    parts.push(`- System phase: ${playerContext.systemPhase.toUpperCase()}`)
     if (playerContext.hasDebuff) {
       parts.push('- Status: Performance degradation active')
     }
@@ -318,9 +320,12 @@ function buildNarrativePrompt(
     }
   }
 
-  // Add generation instructions
+  // Add generation instructions with phase reminder
   parts.push('\nGenerate a short message (2-5 sentences) in the System voice.')
   parts.push('Remember: No exclamation marks. No encouragement. Only observation.')
+  if (playerContext) {
+    parts.push(`Adjust tone based on ${playerContext.systemPhase.toUpperCase()} phase.`)
+  }
 
   return parts.join('\n')
 }

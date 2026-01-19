@@ -52,7 +52,7 @@ export interface DashboardData {
  * Hook for all dashboard data
  */
 export function useDashboard() {
-  const player = usePlayer()
+  const { player: playerData, isLoading: playerLoading, isError: playerError, refetch: refetchPlayer } = usePlayer()
   const quests = useQuests()
   const queryClient = useQueryClient()
   const { syncIfNeeded } = useHealthSync()
@@ -72,14 +72,14 @@ export function useDashboard() {
       } catch {
         // Default if endpoint not available
         return {
-          currentLevel: player.data?.level ?? 1,
-          currentXP: player.data?.totalXP ?? 0,
+          currentLevel: playerData?.level ?? 1,
+          currentXP: playerData?.totalXP ?? 0,
           xpForNextLevel: 100,
           progressPercent: 0,
         }
       }
     },
-    enabled: !!player.data,
+    enabled: !!playerData,
     staleTime: 60 * 1000,
   })
 
@@ -102,21 +102,22 @@ export function useDashboard() {
     staleTime: 60 * 1000,
   })
 
-  // Calculate quest summary
+  // Calculate quest summary using dailyQuests from hook
+  const allQuests = quests.dailyQuests
   const questSummary = {
-    total: quests.data?.length ?? 0,
-    completed: quests.data?.filter(q => q.status === 'COMPLETED').length ?? 0,
-    xpEarned: quests.data
-      ?.filter(q => q.status === 'COMPLETED')
-      .reduce((sum, q) => sum + (q.xpReward ?? 0), 0) ?? 0,
-    xpPotential: quests.data?.reduce((sum, q) => sum + (q.xpReward ?? 0), 0) ?? 0,
+    total: allQuests.length,
+    completed: allQuests.filter((q) => q.status === 'COMPLETED').length,
+    xpEarned: allQuests
+      .filter((q) => q.status === 'COMPLETED')
+      .reduce((sum, q) => sum + (q.xpAwarded ?? 0), 0),
+    xpPotential: allQuests.reduce((sum, q) => sum + (q.baseXP ?? 0), 0),
   }
 
   // Calculate streak info
   const streakInfo = {
-    current: player.data?.currentStreak ?? 0,
-    isActive: (player.data?.currentStreak ?? 0) > 0,
-    daysUntilBonus: 7 - ((player.data?.currentStreak ?? 0) % 7),
+    current: playerData?.currentStreak ?? 0,
+    isActive: (playerData?.currentStreak ?? 0) > 0,
+    daysUntilBonus: 7 - ((playerData?.currentStreak ?? 0) % 7),
   }
 
   // Refresh all data
@@ -132,19 +133,24 @@ export function useDashboard() {
   }
 
   return {
-    data: player.data ? {
+    data: playerData ? {
       player: {
-        name: player.data.name ?? 'Hunter',
-        level: player.data.level,
-        totalXP: player.data.totalXP,
-        currentStreak: player.data.currentStreak,
-        perfectStreak: player.data.perfectStreak ?? 0,
-        longestStreak: player.data.longestStreak ?? 0,
-        stats: player.data.stats,
+        name: playerData.name ?? 'Hunter',
+        level: playerData.level,
+        totalXP: playerData.totalXP,
+        currentStreak: playerData.currentStreak,
+        perfectStreak: playerData.perfectDays ?? 0,
+        longestStreak: playerData.longestStreak ?? 0,
+        stats: {
+          STR: playerData.stats?.strength ?? 10,
+          AGI: playerData.stats?.agility ?? 10,
+          VIT: playerData.stats?.vitality ?? 10,
+          DISC: playerData.stats?.discipline ?? 10,
+        },
       },
       levelProgress: levelProgress.data ?? {
-        currentLevel: player.data.level,
-        currentXP: player.data.totalXP,
+        currentLevel: playerData.level,
+        currentXP: playerData.totalXP,
         xpForNextLevel: 100,
         progressPercent: 0,
       },
@@ -153,9 +159,9 @@ export function useDashboard() {
       streak: streakInfo,
     } as DashboardData : null,
     
-    isLoading: player.isLoading || quests.isLoading,
-    isRefetching: player.isRefetching || quests.isRefetching,
-    error: player.error || quests.error,
+    isLoading: playerLoading || quests.isLoading,
+    isRefetching: quests.isLoading,
+    error: playerError || quests.error,
     refresh,
   }
 }

@@ -155,6 +155,7 @@ export const queryKeys = {
   player: () => ['player'] as const,
   playerStats: () => ['player', 'stats'] as const,
   playerStreak: () => ['player', 'streak'] as const,
+  playerTitles: () => ['player', 'titles'] as const,
 
   quests: () => ['quests'] as const,
   questsToday: () => ['quests', 'today'] as const,

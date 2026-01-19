@@ -27,10 +27,27 @@ Located at `docs/planning/tasks/manifest.json`. Contains:
 
 ### Task Lifecycle
 ```
-available → claimed → in_progress → completed
+available → claimed → in_progress → completed → (auto-purged)
                   ↓
               blocked/abandoned
 ```
+
+### Automatic Manifest Cleanup
+Completed tasks are automatically purged from the manifest to keep it lean and manageable. This happens:
+- After each dev-loop cycle completes
+- When updating a task status to "completed"
+
+**Cleanup preserves:**
+- Tasks with status: available, claimed, in_progress, blocked, abandoned
+- All metadata and schema configuration
+
+**Cleanup removes:**
+- Tasks with status: completed
+
+This keeps the manifest focused on actionable work. Completed task specs remain in `docs/planning/tasks/` for historical reference.
+
+**Cleanup implementation:**
+When writing the manifest after marking a task completed, filter out all tasks with `"status": "completed"` before saving. Keep all other tasks and the schema configuration intact.
 
 ### Conflict Detection
 Tasks conflict if they:
@@ -49,6 +66,7 @@ Safe parallel pairs: one backend + one frontend task.
 4. Execute task (create/modify files per spec)
 5. Run build verification (`npm run build`)
 6. Update manifest to completed
+7. **Purge completed tasks** from manifest (cleanup step)
 
 ### Parallel Execution (--parallel N)
 1. **Acquire manifest lock** before reading
@@ -84,9 +102,25 @@ npx ts-node scripts/manifest-lock.ts force-release
 - Locks auto-expire after 60 seconds (stale lock protection)
 - Lock file: `docs/planning/tasks/manifest.lock` (gitignored)
 
+### Manifest Validation
+Before executing any tasks, validate the manifest structure:
+
+```bash
+npx tsx scripts/validate-manifest.ts
+```
+
+If validation fails, fix the issues before proceeding. Common validation errors:
+- Invalid task ID format (should be `G{number}-{slug}`)
+- Missing required fields (id, title, file, priority, status)
+- Invalid status/priority values
+- Dependencies referencing non-existent tasks
+- File name not matching task ID
+
+The manifest schema is defined at `docs/planning/tasks/manifest.schema.json`.
+
 ### Pipeline Check
-1. Read manifest
-2. Count by status: available, completed, blocked
+1. Validate manifest (fail fast if invalid)
+2. Read manifest, count by status: available, completed, blocked
 3. Check if ideation needed (available < threshold)
 4. Report pipeline health
 

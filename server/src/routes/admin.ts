@@ -16,6 +16,7 @@ import {
   getMetricsTimeSeries,
 } from '../services/metrics'
 import { sendWeeklyReportsToAll } from '../services/email'
+import { cache } from '../lib/cache'
 
 const admin = new Hono()
 
@@ -171,6 +172,49 @@ admin.post('/emails/weekly-reports', async (c) => {
       timestamp: new Date().toISOString(),
     }, 500)
   }
+})
+
+/**
+ * GET /admin/cache - Cache statistics
+ */
+admin.get('/cache', (c) => {
+  const stats = cache.stats()
+  return c.json({
+    size: stats.size,
+    maxSize: stats.maxSize,
+    hits: stats.hits,
+    misses: stats.misses,
+    hitRate: `${stats.hitRate}%`,
+    entries: stats.keys.length,
+    keys: stats.keys.slice(0, 100), // Limit for readability
+    timestamp: new Date().toISOString(),
+  })
+})
+
+/**
+ * POST /admin/cache/clear - Clear all cache
+ */
+admin.post('/cache/clear', (c) => {
+  cache.clear()
+  return c.json({
+    success: true,
+    message: 'Cache cleared',
+    timestamp: new Date().toISOString(),
+  })
+})
+
+/**
+ * DELETE /admin/cache/:pattern - Clear cache by pattern
+ */
+admin.delete('/cache/:pattern', (c) => {
+  const pattern = decodeURIComponent(c.req.param('pattern'))
+  const count = cache.invalidateByPattern(pattern)
+  return c.json({
+    success: true,
+    message: `Invalidated ${count} cache entries`,
+    pattern,
+    timestamp: new Date().toISOString(),
+  })
 })
 
 export default admin

@@ -288,8 +288,25 @@ export async function queueNotification(
 
   const notification = createNotificationContent(type, data)
 
-  // TODO: Integrate with push notification service
-  console.log('[NOTIFICATION] Queued:', { userId, notification })
-
-  return true
+  // Send push notification via Expo Push API
+  try {
+    const { sendPushToUser } = await import('./push-provider')
+    const result = await sendPushToUser(userId, {
+      title: notification.title,
+      body: notification.body,
+      data: notification.data,
+    })
+    
+    console.log('[NOTIFICATION] Sent:', { 
+      userId, 
+      type, 
+      sent: result.sent, 
+      failed: result.failed 
+    })
+    
+    return result.sent > 0
+  } catch (error) {
+    console.error('[NOTIFICATION] Failed to send push:', error)
+    return false
+  }
 }

@@ -1317,3 +1317,523 @@ Priority Order:
 
 This philosophy—observation without judgment—is the differentiator. But without automatic health data, observation requires manual entry, which creates friction. HealthKit integration isn't a feature; it's the enabler of the core promise.
 
+---
+
+## Ideation Loop - 2026-01-18 (Testing/Stability Focus)
+
+### Analysis Summary
+Multi-source analysis focused on testing and stability:
+
+| Source | Analysis |
+|--------|----------|
+| Test Coverage | 26/49 services (53%), 2/21 routes (10%), 3/80 components (4%) |
+| TODO/FIXME | 48 items across 17 files |
+| Error Handling | 463 try/catch blocks, inconsistent patterns |
+| API Validation | 1/21 routes with Zod (5%) |
+| E2E Coverage | 4 specs covering basic flows |
+
+### Critical Gaps Identified
+
+#### Test Coverage
+| Category | Current | Target |
+|----------|---------|--------|
+| Backend Services | 53% | 80% |
+| API Routes | 10% | 80% |
+| Frontend Components | 4% | 50% |
+| Mobile | 0% | 30% |
+
+#### Security/Stability
+- **API Input Validation** - 95% of routes accept any input
+- **Error Handling** - Inconsistent patterns across 463 try/catch blocks
+- **Integration Tests** - No cross-service flow tests exist
+
+### Tasks Generated
+
+| ID | Title | Priority | Domain |
+|----|-------|----------|--------|
+| G148-route-test-coverage | API Route Test Coverage | P1 | backend/testing |
+| G149-frontend-unit-tests | Frontend Component Unit Tests | P1 | frontend/testing |
+| G150-api-input-validation | API Input Validation with Zod | P1 | backend/security |
+| G151-mobile-test-setup | Mobile Test Infrastructure | P2 | mobile/testing |
+| G152-integration-test-suite | Integration Test Suite | P1 | backend/testing |
+| G153-error-handling-standardization | Error Handling Standardization | P2 | backend/quality |
+| G154-e2e-expansion | E2E Test Expansion | P2 | e2e/testing |
+| G155-service-test-completion | Complete Service Test Coverage | P1 | backend/testing |
+
+### Updated Task Pipeline
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Total Tasks | 84 | 92 |
+| Completed | 81 | 81 |
+| Available | 0 | 8 |
+| P1 Tasks | 2 | 7 |
+| P2 Tasks | 1 | 4 |
+
+### Recommended Next Actions
+
+1. **Immediate (P1 - Security/Stability):**
+   - G150-api-input-validation (security hardening)
+   - G148-route-test-coverage (critical path testing)
+   - G152-integration-test-suite (cross-service verification)
+
+2. **Short-term (P1 - Coverage):**
+   - G149-frontend-unit-tests (UI stability)
+   - G155-service-test-completion (business logic verification)
+
+3. **Medium-term (P2 - Polish):**
+   - G153-error-handling-standardization (code quality)
+   - G154-e2e-expansion (user flow coverage)
+   - G151-mobile-test-setup (mobile parity)
+
+### Key Observations
+
+1. **Backend services are the most tested** but still have gaps in critical areas (health, quest-lifecycle)
+2. **API validation is the biggest security gap** - most routes accept arbitrary input
+3. **Frontend testing is minimal** - only 3 component tests exist
+4. **Mobile has zero tests** - highest risk for regressions
+5. **No integration tests** - cross-service flows are untested
+6. **Error handling is inconsistent** - difficult to debug production issues
+
+### Testing Stack Summary
+
+| Layer | Framework | Status |
+|-------|-----------|--------|
+| Backend Unit | Vitest | ✅ Configured |
+| Backend Integration | Vitest | ❌ Needs setup |
+| Frontend Unit | Vitest + RTL | ✅ Configured |
+| E2E | Playwright | ✅ Configured |
+| Mobile | Jest + RNTL | ⚠️ Jest configured, no tests |
+
+---
+
+## Ideation: Food Scanning System - 2026-01-18
+
+### Source
+User topic: "Food scanning with photo recognition and barcode detection for macro estimation"
+
+### Design Document
+- `docs/mobile/food-scanning.md`
+
+### Research Summary
+
+Analyzed current best food recognition APIs:
+- **[Spike Nutrition API](https://www.spikeapi.com/nutrition-ai-api)** - Best accuracy (97%), AI-powered
+- **[FatSecret Platform API](https://platform.fatsecret.com/platform-api)** - Large database, image recognition
+- **[LogMeal Food AI](https://logmeal.com/api/)** - Currently integrated, ~80-90% accuracy
+- **[Calorie Mama](https://caloriemama.ai/api)** - Fast, mobile-optimized
+- **Open Food Facts** - Free barcode database (3M+ products)
+
+### Existing Implementation
+| Component | Status |
+|-----------|--------|
+| LogMeal API integration | ✅ Backend complete |
+| Open Food Facts client | ✅ Backend complete |
+| Nutrition routes | ✅ API endpoints ready |
+| useBarcodeLookup hook | ✅ Mobile hook ready |
+| BarcodeScanner component | ⚠️ UI stub only |
+| Real camera integration | ❌ Not implemented |
+
+### Tasks Generated
+
+| ID | Title | Priority | Complexity |
+|----|-------|----------|------------|
+| G156-camera-integration | Mobile Camera Integration | P0 | medium |
+| G157-barcode-scanner-real | Real Barcode Scanner Implementation | P0 | medium |
+| G158-food-scan-ui | Food Scanning UX Polish | P1 | medium |
+| G159-photo-food-recognition | AI Photo Food Recognition | P1 | high |
+| G160-offline-food-cache | Offline Food Database Cache | P2 | medium |
+
+### Dependency Graph
+
+```
+G156-camera-integration
+         │
+    ┌────┴────┐
+    ▼         ▼
+G157-barcode  G159-photo-recognition
+    │
+    ├───────────┐
+    ▼           ▼
+G158-food-ui   G160-offline-cache
+```
+
+### Updated Task Pipeline
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Total Tasks | 100 | 105 |
+| Available | 13 | 18 |
+| P0 Tasks | 0 | 2 |
+| P1 Tasks | 5 | 7 |
+| P2 Tasks | 8 | 9 |
+
+### Implementation Order (Recommended)
+
+**Phase 1: Camera Foundation (P0)**
+1. G156 - Install expo-camera, handle permissions
+2. G157 - Working barcode scanning with Open Food Facts lookup
+
+**Phase 2: Full Experience (P1)**
+3. G158 - Polished UX with mode toggle, animations
+4. G159 - AI food photo analysis via LogMeal
+
+**Phase 3: Reliability (P2)**
+5. G160 - Offline caching for barcode products
+
+### Notes
+- Camera requires physical device (EAS build)
+- LogMeal API key needed for photo recognition
+- Open Food Facts is free, no API key needed
+- Consider evaluating Spike API for better accuracy in future
+
+---
+
+## Ideation Loop - 2026-01-19 (Narrative Fulfillment Analysis)
+
+### Source
+User topic: "Are we fulfilling our narrative properly? Should we add more story?"
+
+### Analysis Summary
+
+**Key Finding:** The narrative ARCHITECTURE is excellent, but it's underutilized.
+
+| Component | Status | Assessment |
+|-----------|--------|------------|
+| Narrator Agent (Mastra) | ✅ Exists | Underused - many code paths bypass it |
+| Player Context Tool | ✅ Complete | Has level, streak, debuff, patterns |
+| Narrative Templates Tool | ✅ Exists | AI can reference for voice consistency |
+| Seeded Content | ⚠️ Partial | ~45 items vs ~200 documented |
+| AI-first Flow | ❌ Not default | Most calls go direct to templates |
+| System Voice Evolution | ❌ Missing | Same tone for day-1 and day-100 users |
+
+### Revised Understanding
+
+**Initial assumption:** Need to seed ~155 more content items.
+
+**Corrected approach:** The AI narrator should generate most content dynamically. Templates serve as:
+1. **Fallback** when AI unavailable
+2. **Voice reference** for AI consistency
+3. **Critical path content** that must always work
+
+### Architecture Gap: Narrator-First vs Template-First
+
+**Current (Template-First):**
+```
+Most code → getContent() → Template → User
+```
+
+**Desired (Narrator-First):**
+```
+Most code → generateNarrative() → AI Agent → User
+              ↓ (fallback)
+          Templates
+```
+
+### Tasks Generated
+
+| ID | Title | Priority | Rationale |
+|----|-------|----------|-----------|
+| G161-p0-narrative-seeding | P0 Narrative Content Seeding | P1 | Critical fallback content |
+| G162-boss-narrative-complete | Complete Boss Narrative Content | P1 | Boss lore AI shouldn't freestyle |
+| G163-title-dungeon-content | Title and Dungeon Narrative Content | P2 | System descriptions |
+| G164-system-voice-evolution | System Voice Evolution | P2 | Phase-aware voice (depends on G165) |
+| G165-narrator-first-architecture | Narrator-First Architecture | P1 | **KEY TASK** - Make AI the default |
+
+### Dependency Graph
+
+```
+G165-narrator-first-architecture (P1 - Foundation)
+         │
+         ├───────────────────────────────┐
+         │                               │
+         ▼                               ▼
+G164-system-voice-evolution      All other narrative
+         │                       calls use AI
+         ▼
+Phase-aware personality
+```
+
+### The System Voice Evolution Concept
+
+| Phase | Days | System's Role | Voice |
+|-------|------|---------------|-------|
+| **Observer** | 1-14 | Clinical assessment | "Another data point collected." |
+| **Challenger** | 15-30 | Testing resolve | "The easy part is over." |
+| **Recognition** | 31-60 | Grudging acknowledgment | "Assessment was incorrect." |
+| **Witness** | 60+ | Long-term companion | "You are no longer who arrived." |
+
+### Updated Task Pipeline
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Total Tasks | 105 | 110 |
+| Completed | ~83 | ~83 |
+| Available | 22 | 27 |
+| P1 (Narrative) | 0 | 3 |
+| P2 (Narrative) | 0 | 2 |
+
+### Recommended Next Actions
+
+1. **Immediate (P1):**
+   - **G165-narrator-first-architecture** - This is the key task
+   - G162-boss-narrative-complete - Bosses need curated lore
+
+2. **Short-term (P1):**
+   - G161-p0-narrative-seeding - Fallback templates
+   - G164-system-voice-evolution (after G165)
+
+3. **Medium-term (P2):**
+   - G163-title-dungeon-content
+
+### Key Insight
+
+> The AI narrator is the differentiator. Static templates make Journey feel like every other fitness app. Dynamic, context-aware narrative that knows your patterns, evolves with your journey, and personalizes every message - that's what makes it feel like the System is actually watching.
+
+### Cost Considerations
+
+AI calls have cost. G165 should include:
+- Response caching (1 hour for non-critical messages)
+- Rate limiting per user
+- Tiered usage: AI for key moments (login, milestone, level-up), templates for frequent events (quest completion ticker)
+
+### Conclusion
+
+**Use both. Templates + AI, each where they shine.**
+
+- **Templates:** High-frequency events (quest complete, XP awards), critical paths (onboarding, errors), curated lore (boss intros)
+- **AI Narrator:** Key moments (login greeting, milestones, return after absence), pattern observations, personalized reflections
+
+The narrator agent exists and works. Templates exist and work. G165 establishes clear guidelines for when to use each, and ensures AI is used for the moments that benefit from personalization.
+
+---
+
+## Ideation Loop - 2026-01-19 (Web-Mobile Feature Parity)
+
+### Source
+User topic: "Feature parity for web and mobile. Mobile should do everything web can do"
+
+### Analysis Summary
+
+**Key Finding:** Mobile has components but lacks unified screens matching web pages.
+
+| Category | Web | Mobile | Gap |
+|----------|-----|--------|-----|
+| Pages/Screens | 13 | ~3 | 10 screens needed |
+| Components | 50+ | 40+ | Good component base |
+| Hooks | 35 | 19 | Need mobile equivalents |
+| Navigation | Full tabs | Minimal | Full tab navigation needed |
+
+### Web Features Missing on Mobile
+
+**Core Screens (P0)**
+| Feature | Web Status | Mobile Status |
+|---------|------------|---------------|
+| Dashboard | ✅ Full featured | ⚠️ Components only |
+| Onboarding | ✅ 5-step flow | ⚠️ Partial |
+| Tab Navigation | ✅ Complete | ⚠️ Minimal |
+
+**Feature Screens (P1)**
+| Feature | Web Status | Mobile Status |
+|---------|------------|---------------|
+| Stats | ✅ Complete | ⚠️ Has radar |
+| Profile/Settings | ✅ Complete | ⚠️ Components only |
+| Quest Archive | ✅ Complete | ❌ Missing |
+| Dungeons | ✅ Complete | ⚠️ Components only |
+| Reconciliation | ✅ Complete | ❌ Missing |
+
+**Secondary Features (P2)**
+| Feature | Web Status | Mobile Status |
+|---------|------------|---------------|
+| Quest History | ✅ Complete | ❌ Missing |
+| Analytics | ✅ Complete | ❌ Missing |
+| Weekly Summary | ✅ Complete | ❌ Missing |
+| XP Timeline | ✅ Complete | ❌ Missing |
+| Unlock Progress | ✅ Complete | ❌ Missing |
+| Shadow Collection | ✅ Complete | ❌ Missing |
+
+### Tasks Generated
+
+| ID | Title | Priority | Complexity |
+|----|-------|----------|------------|
+| G166-mobile-dashboard | Mobile Dashboard Screen | P0 | high |
+| G167-mobile-stats-page | Mobile Stats Screen | P1 | medium |
+| G168-mobile-profile-settings | Mobile Profile & Settings Screen | P1 | medium |
+| G169-mobile-quests-archive | Mobile Quest Archive/Management Screen | P1 | medium |
+| G170-mobile-quest-history | Mobile Quest History Screen | P2 | medium |
+| G171-mobile-dungeons | Mobile Dungeons Screen | P1 | medium |
+| G172-mobile-analytics | Mobile Analytics Screen | P2 | medium |
+| G173-mobile-onboarding | Mobile Onboarding Flow | P0 | medium |
+| G174-mobile-reconciliation | Mobile Day Reconciliation Flow | P1 | medium |
+| G175-mobile-weekly-summary | Mobile Weekly Summary | P2 | medium |
+| G176-mobile-navigation-tabs | Mobile Tab Navigation | P0 | medium |
+| G177-mobile-xp-timeline | Mobile XP Timeline | P2 | medium |
+| G178-mobile-unlock-progress | Mobile Unlock Progress | P2 | medium |
+| G179-mobile-shadow-collection | Mobile Shadow Collection | P2 | medium |
+
+### Dependency Graph
+
+```
+G176-mobile-navigation-tabs (P0 - Navigation Foundation)
+         │
+    ┌────┼────┬────────┬────────────────┐
+    ▼    ▼    ▼        ▼                ▼
+  G166  G167 G168    G171             (other screens)
+  dash  stats profile dungeons
+
+G173-mobile-onboarding (P0 - First run experience)
+         │
+         ▼
+   G166-mobile-dashboard (user lands here after onboarding)
+         │
+    ┌────┼────┬────────┐
+    ▼    ▼    ▼        ▼
+  G174  G175 G177    G178
+  recon weekly XP    unlocks
+```
+
+### Updated Task Pipeline
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Total Tasks | 110 | 124 |
+| Completed | ~83 | ~83 |
+| Available | 27 | 41 |
+| P0 Tasks | 5 | 8 |
+| P1 Tasks | 7 | 12 |
+| P2 Tasks | 15 | 21 |
+
+### Recommended Next Actions
+
+**Immediate (P0 - Mobile Foundation):**
+1. **G176-mobile-navigation-tabs** - Enables all other screens
+2. **G166-mobile-dashboard** - Main landing experience
+3. **G173-mobile-onboarding** - First run flow
+
+**Short-term (P1 - Core Experience):**
+4. G167-mobile-stats-page - Stats visualization
+5. G168-mobile-profile-settings - User settings
+6. G169-mobile-quests-archive - Quest management
+7. G171-mobile-dungeons - Game content
+8. G174-mobile-reconciliation - Daily rhythm
+
+**Medium-term (P2 - Full Parity):**
+9. G170-mobile-quest-history - Historical data
+10. G172-mobile-analytics - Analytics dashboard
+11. G175-mobile-weekly-summary - Weekly insights
+12. G177-mobile-xp-timeline - XP details
+13. G178-mobile-unlock-progress - Progression tracking
+14. G179-mobile-shadow-collection - Game collectibles
+
+### Key Observations
+
+1. **Mobile foundation is good** - Components exist, screens need assembly
+2. **Navigation is the blocker** - Must build tab navigation first
+3. **Hooks can be shared** - Many web hooks port directly to mobile
+4. **Backend is ready** - All APIs already exist
+5. **Estimated effort** - 14 screens × medium complexity
+
+### Notes
+
+- Mobile should prioritize touch-native interactions (swipe, long-press)
+- Consider mobile-specific features (haptics, push notifications)
+- Ensure offline support for core features
+- Test on various screen sizes (phone, tablet)
+
+---
+
+## Ideation Loop - 2026-01-19 (Retrospective & Forward-Looking)
+
+### Source
+User request: `/ideation-loop --focus retrospective, forward looking changes`
+
+### Analysis Summary
+
+**Codebase Scale:**
+| Category | Count |
+|----------|-------|
+| Total TS/TSX files | 15,700 |
+| Backend Services | 82 files (27 tests) |
+| Backend Routes | 30 files (8 tests) |
+| Web Components | 98 files |
+| Mobile Source | 109 files |
+| Documentation | 94+ markdown files |
+
+**Active Technical Debt (6 TODOs):**
+- `mobile/src/lib/widget-data.ts:121` - iOS widget native bridge
+- `mobile/src/lib/widget-data.ts:143` - Android widget native bridge
+- `mobile/src/hooks/usePlayer.ts:108` - Fetch active title
+- `mobile/app/(tabs)/index.tsx:48` - Get debuffActive from player
+- `mobile/src/screens/FoodScanScreen.tsx:189` - Manual entry navigation
+- `server/src/services/notification.ts:291` - Push notification integration
+
+**Test Coverage:**
+- Backend Services: 33% (27/82)
+- Backend Routes: 27% (8/30)
+- Web Components: Minimal
+- Mobile: 0%
+
+### New Gaps Identified
+
+| Gap | Title | Source | Priority |
+|-----|-------|--------|----------|
+| G180 | Mobile Player Data Hydration | TODO analysis | P1 |
+| G181 | Push Notification Integration | Server TODO | P1 |
+| G182 | Native Widget Bridge | TODO analysis | P2 (blocked) |
+| G183 | Mobile Manual Food Entry | TODO analysis | P1 |
+| G184 | API Response Caching | Architecture review | P2 |
+| G185 | Route Test Coverage Expansion | Coverage analysis | P1 |
+
+### Tasks Generated
+
+| ID | Title | Priority | Domain |
+|----|-------|----------|--------|
+| G180-mobile-player-data-hydration | Mobile Player Data Hydration | P1 | mobile/data |
+| G181-push-notification-integration | Push Notification Integration | P1 | full-stack |
+| G182-native-widget-bridge | Native Widget Bridge | P2 | mobile/native |
+| G183-mobile-manual-food-entry | Manual Food Entry Screen | P1 | mobile |
+| G184-api-response-caching | API Response Caching Layer | P2 | backend |
+| G185-route-test-expansion | Route Test Coverage Expansion | P1 | testing |
+
+### Updated Task Pipeline
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Total Tasks | 15 | 18 |
+| In Progress | 1 | 0 (auto-purged) |
+| Available | 13 | 16 |
+| Blocked | 1 | 2 |
+| P1 Tasks | 1 | 5 |
+| P2 Tasks | 12 | 11 |
+
+### Recommended Next Actions
+
+**Immediate (P1 - Technical Debt):**
+1. **G180-mobile-player-data-hydration** - Fix incomplete data issues
+2. **G183-mobile-manual-food-entry** - Complete nutrition flow
+3. **G185-route-test-expansion** - Improve test coverage
+
+**Short-term (P1 - Engagement):**
+4. **G181-push-notification-integration** - Enable re-engagement
+
+**Medium-term (P2 - Quality):**
+5. **G184-api-response-caching** - Performance improvement
+6. **G153-error-handling-standardization** - Code quality
+7. Mobile parity screens (G170, G172, G175, G177-G179)
+
+### Key Insights
+
+1. **Mobile is maturing** - 109 source files, good component base
+2. **TODOs reveal integration gaps** - Player data hydration, push notifications incomplete
+3. **Test coverage needs expansion** - Routes at 27% vs services at 33%
+4. **Performance optimization opportunity** - No caching layer observed
+5. **Widget features blocked** - Native bridges require expo eject
+
+### Forward-Looking Priorities
+
+1. **Complete mobile parity** - 7 screens remaining
+2. **Fix technical debt** - 6 active TODOs to resolve
+3. **Improve test coverage** - Target 80% for routes
+4. **Enable push notifications** - Critical for user engagement
+5. **Add caching layer** - Performance improvement as user base grows
+

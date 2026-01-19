@@ -10,6 +10,7 @@ import {
   getPublicGuilds,
   getGuildLeaderboard,
 } from '../services/guild'
+import { cacheResponse, CACHE_PRESETS } from '../lib/cache'
 
 const guildRoutes = new Hono()
 
@@ -130,8 +131,8 @@ guildRoutes.post('/guilds/invite', requireAuth, async (c) => {
   }
 })
 
-// Browse public guilds
-guildRoutes.get('/guilds', requireAuth, async (c) => {
+// Browse public guilds (cached 2 min)
+guildRoutes.get('/guilds', requireAuth, cacheResponse({ ttlSeconds: 120, tags: ['guilds'] }), async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '20')
     const guilds = await getPublicGuilds(Math.min(limit, 50))
@@ -142,8 +143,8 @@ guildRoutes.get('/guilds', requireAuth, async (c) => {
   }
 })
 
-// Guild leaderboard
-guildRoutes.get('/guilds/leaderboard', requireAuth, async (c) => {
+// Guild leaderboard (cached 1 min, shared across users)
+guildRoutes.get('/guilds/leaderboard', requireAuth, cacheResponse(CACHE_PRESETS.leaderboard), async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '10')
     const leaderboard = await getGuildLeaderboard(Math.min(limit, 50))

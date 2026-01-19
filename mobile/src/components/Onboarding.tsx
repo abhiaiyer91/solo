@@ -2,7 +2,7 @@
  * Mobile Onboarding Flow Components
  */
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import {
   View,
   Text,
@@ -31,11 +31,13 @@ interface OnboardingProps {
   onComplete: (data: OnboardingData) => void
 }
 
-interface OnboardingData {
+export interface OnboardingData {
   origin?: string
   acceptedAt: string
   completedAt: string
 }
+
+const STEPS: OnboardingStep[] = ['detection', 'terms', 'accept', 'origin', 'reveal']
 
 // ═══════════════════════════════════════════════════════════
 // NARRATIVE CONTENT
@@ -91,6 +93,29 @@ const ORIGINS = [
 ]
 
 // ═══════════════════════════════════════════════════════════
+// STEP PROGRESS INDICATOR
+// ═══════════════════════════════════════════════════════════
+
+function StepProgress({ currentStep }: { currentStep: OnboardingStep }) {
+  const currentIndex = STEPS.indexOf(currentStep)
+
+  return (
+    <View style={styles.progressContainer}>
+      {STEPS.map((step, index) => (
+        <View
+          key={step}
+          style={[
+            styles.progressDot,
+            index <= currentIndex && styles.progressDotActive,
+            index === currentIndex && styles.progressDotCurrent,
+          ]}
+        />
+      ))}
+    </View>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════
 // TYPEWRITER COMPONENT
 // ═══════════════════════════════════════════════════════════
 
@@ -105,9 +130,18 @@ function TypewriterText({
 }) {
   const [displayedText, setDisplayedText] = useState('')
   const [isComplete, setIsComplete] = useState(false)
+  const onCompleteRef = useRef(onComplete)
+
+  // Keep ref updated without triggering effect
+  useEffect(() => {
+    onCompleteRef.current = onComplete
+  }, [onComplete])
 
   useEffect(() => {
+    setDisplayedText('')
+    setIsComplete(false)
     let index = 0
+
     const timer = setInterval(() => {
       if (index < text.length) {
         setDisplayedText(text.slice(0, index + 1))
@@ -115,12 +149,12 @@ function TypewriterText({
       } else {
         setIsComplete(true)
         clearInterval(timer)
-        onComplete?.()
+        onCompleteRef.current?.()
       }
     }, delay)
 
     return () => clearInterval(timer)
-  }, [text, delay, onComplete])
+  }, [text, delay])
 
   return (
     <Text style={styles.typewriterText}>
@@ -179,41 +213,39 @@ function DetectionScreen({ onNext }: { onNext: () => void }) {
 // ═══════════════════════════════════════════════════════════
 
 function TermsScreen({ onNext }: { onNext: () => void }) {
-  const [lineIndex, setLineIndex] = useState(0)
-  const [showButton, setShowButton] = useState(false)
+  const [showAllText, setShowAllText] = useState(false)
 
-  const handleLineComplete = useCallback(() => {
-    setTimeout(() => {
-      if (lineIndex < TERMS_LINES.length - 1) {
-        setLineIndex((prev) => prev + 1)
-      } else {
-        setShowButton(true)
-      }
-    }, 300)
-  }, [lineIndex])
+  // Show all text after a short delay, then show button
+  useEffect(() => {
+    const timer = setTimeout(() => setShowAllText(true), 500)
+    return () => clearTimeout(timer)
+  }, [])
 
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.termsContent}>
-        {TERMS_LINES.slice(0, lineIndex + 1).map((line, i) => (
-          <View key={i} style={styles.termsLine}>
-            {i === lineIndex && line ? (
-              <TypewriterText text={line} onComplete={handleLineComplete} delay={40} />
-            ) : (
-              <Text style={[styles.termsText, i === 0 && styles.termsTitle]}>
-                {line || ' '}
-              </Text>
-            )}
-          </View>
-        ))}
+        <Text style={[styles.termsText, styles.termsTitle]}>TERMS OF OBSERVATION</Text>
+
+        {showAllText && (
+          <>
+            <View style={{ height: 16 }} />
+            <Text style={styles.termsText}>The System will observe your actions.</Text>
+            <Text style={styles.termsText}>The System will report what it sees.</Text>
+            <Text style={styles.termsText}>The System will not lie to you.</Text>
+            <View style={{ height: 16 }} />
+            <Text style={styles.termsText}>Progress requires consistency.</Text>
+            <Text style={styles.termsText}>Excuses are noted but not accepted.</Text>
+            <Text style={styles.termsText}>You will face yourself.</Text>
+          </>
+        )}
       </ScrollView>
 
-      {showButton && (
-        <Animated.View style={styles.buttonContainer}>
+      {showAllText && (
+        <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.primaryButton} onPress={onNext}>
             <Text style={styles.primaryButtonText}>I Understand</Text>
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       )}
     </View>
   )
@@ -404,6 +436,9 @@ export function MobileOnboarding({ onComplete }: OnboardingProps) {
 
   return (
     <View style={styles.container}>
+      {/* Step Progress Indicator */}
+      <StepProgress currentStep={step} />
+
       {step === 'detection' && (
         <DetectionScreen onNext={() => setStep('terms')} />
       )}
@@ -434,6 +469,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    paddingTop: 60,
+    paddingBottom: 20,
+  },
+  progressDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#1E293B',
+  },
+  progressDotActive: {
+    backgroundColor: '#60A5FA',
+  },
+  progressDotCurrent: {
+    transform: [{ scale: 1.25 }],
   },
   screen: {
     flex: 1,

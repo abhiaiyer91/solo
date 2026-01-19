@@ -13,6 +13,7 @@ import {
   setNutritionTargets,
   checkProteinGoal,
 } from '../services/nutrition'
+import { lookupBarcode, searchProducts, calculateServingNutrition } from '../services/open-food-facts'
 
 const nutrition = new Hono()
 
@@ -220,6 +221,117 @@ nutrition.get(
     } catch (error) {
       console.error('Error checking protein goal:', error)
       return c.json({ error: 'Failed to check protein goal' }, 500)
+    }
+  }
+)
+
+/**
+ * GET /nutrition/barcode/:code - Look up a product by barcode
+ */
+nutrition.get('/nutrition/barcode/:code', async (c) => {
+  const user = c.get('user')
+  if (!user) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  const barcode = c.req.param('code')
+
+  if (!barcode || barcode.length < 8 || barcode.length > 14) {
+    return c.json({ error: 'Invalid barcode format' }, 400)
+  }
+
+  try {
+    const product = await lookupBarcode(barcode)
+
+    if (!product) {
+      return c.json({
+        found: false,
+        barcode,
+        message: 'Product not found in Open Food Facts database',
+      }, 404)
+    }
+
+    return c.json({
+      found: true,
+      product,
+    })
+  } catch (error) {
+    console.error('Barcode lookup error:', error)
+    return c.json({ error: 'Failed to lookup barcode' }, 500)
+  }
+})
+
+/**
+ * GET /nutrition/search - Search for products by name
+ */
+nutrition.get(
+  '/nutrition/search',
+  zValidator('query', z.object({
+    q: z.string().min(2).max(100),
+    page: z.coerce.number().min(1).max(100).default(1),
+    pageSize: z.coerce.number().min(1).max(50).default(20),
+  })),
+  async (c) => {
+    const user = c.get('user')
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401)
+    }
+
+    const { q, page, pageSize } = c.req.valid('query')
+
+    try {
+      const results = await searchProducts(q, page, pageSize)
+      return c.json(results)
+    } catch (error) {
+      console.error('Product search error:', error)
+      return c.json({ error: 'Failed to search products' }, 500)
+    }
+  }
+)
+
+/**
+ * POST /nutrition/calculate - Calculate nutrition for a serving
+ */
+nutrition.post(
+  '/nutrition/calculate',
+  zValidator(
+    'json',
+    z.object({
+      barcode: z.string(),
+      grams: z.number().min(1).max(5000),
+    })
+  ),
+  async (c) => {
+    const user = c.get('user')
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401)
+    }
+
+    const { barcode, grams } = c.req.valid('json')
+
+    try {
+      const product = await lookupBarcode(barcode)
+
+      if (!product) {
+        return c.json({ error: 'Product not found' }, 404)
+      }
+
+      const nutrition = calculateServingNutrition(product, grams)
+
+      return c.json({
+        product: {
+          name: product.name,
+          brand: product.brand,
+          barcode: product.barcode,
+        },
+        serving: {
+          grams,
+          ...nutrition,
+        },
+      })
+    } catch (error) {
+      console.error('Nutrition calculation error:', error)
+      return c.json({ error: 'Failed to calculate nutrition' }, 500)
     }
   }
 )

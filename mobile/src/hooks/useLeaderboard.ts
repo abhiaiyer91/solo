@@ -11,6 +11,7 @@ export type LeaderboardType = 'weekly' | 'alltime' | 'friends' | 'guild'
 export interface LeaderboardEntry {
   rank: number | null
   odai: string
+  userId?: string
   userName: string | null
   totalXP: number
   seasonalXP?: number
@@ -70,7 +71,15 @@ export function useLeaderboard(type: LeaderboardType = 'weekly', limit: number =
         }
 
         case 'friends': {
-          const partnersResponse = await api.get<{ partners: Array<{ user1Id: string, user2Id: string, user1?: any, user2?: any }> }>(
+          interface PartnerUser {
+            id: string
+            name: string
+            totalXP: number
+            level: number
+            currentStreak: number
+            activeTitle?: string
+          }
+          const partnersResponse = await api.get<{ partners: Array<{ user1Id: string, user2Id: string, user1?: PartnerUser, user2?: PartnerUser }> }>(
             '/api/accountability/partners'
           )
 
@@ -80,6 +89,7 @@ export function useLeaderboard(type: LeaderboardType = 'weekly', limit: number =
               if (!friend) return null
               return {
                 rank: null,
+                odai: friend.id,
                 userId: friend.id,
                 userName: friend.name,
                 totalXP: friend.totalXP,
@@ -87,13 +97,14 @@ export function useLeaderboard(type: LeaderboardType = 'weekly', limit: number =
                 currentStreak: friend.currentStreak,
                 isCurrentUser: false,
                 activeTitle: friend.activeTitle,
-              }
+              } as LeaderboardEntry
             })
             .filter((entry): entry is LeaderboardEntry => entry !== null)
 
           if (player) {
             friendEntries.push({
               rank: null,
+              odai: player.id,
               userId: player.id,
               userName: player.name,
               totalXP: player.totalXP,
@@ -149,10 +160,10 @@ export function useLeaderboard(type: LeaderboardType = 'weekly', limit: number =
   }
 
   // Transform leaderboard entries for the simpler UI format
-  const transformedLeaderboard = (query.data?.leaderboard || []).map(entry => ({
+  const transformedLeaderboard = (query.data?.leaderboard || []).map((entry) => ({
     rank: entry.rank ?? 0,
     player: {
-      id: entry.odai || '',
+      id: (entry as LeaderboardEntry).odai || entry.userId || '',
       name: entry.userName || 'Anonymous',
       level: entry.level,
       xp: entry.totalXP,

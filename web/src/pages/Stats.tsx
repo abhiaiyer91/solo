@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion'
 import { usePlayer, useLevelProgress } from '@/hooks/usePlayer'
 import { StatHexagon, StatCard } from '@/components/stats'
+import { useWeeklyHistory } from '@/hooks/useWeeklySummary'
+import { WeeklySummaryCard } from '@/components/weekly/WeeklySummary'
 
 // Stat colors matching the design system
 const STAT_COLORS = {
@@ -13,6 +15,7 @@ const STAT_COLORS = {
 export function Stats() {
   const { data: player, isLoading: playerLoading } = usePlayer()
   const { data: levelProgress } = useLevelProgress()
+  const { data: weeklyHistory } = useWeeklyHistory(4)
 
   if (playerLoading) {
     return (
@@ -199,6 +202,34 @@ export function Stats() {
           </div>
         </div>
       </motion.div>
+
+      {/* Weekly History */}
+      {weeklyHistory && weeklyHistory.summaries.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="system-window p-6"
+        >
+          <h2 className="text-lg font-bold text-system-text mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 bg-system-purple rounded-full" />
+            WEEKLY HISTORY
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {weeklyHistory.summaries.map((summary, i) => (
+              <motion.div
+                key={summary.weekStart}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 + i * 0.1 }}
+              >
+                <WeeklySummaryCard summary={summary} />
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      )}
     </div>
   )
 }

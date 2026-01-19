@@ -1,6 +1,15 @@
 import { Hono } from 'hono'
+import { zValidator } from '@hono/zod-validator'
 import { requireAuth } from '../middleware/auth'
 import { logger } from '../lib/logger'
+import { cacheResponse, CACHE_PRESETS } from '../lib/cache'
+import {
+  questProgressDataSchema,
+  setTargetSchema,
+  challengeCompleteSchema,
+  questHistoryQuerySchema,
+  daysBackSchema,
+} from '../lib/validation/schemas'
 import {
   getTodayQuestsWithRotating,
   getQuestById,
@@ -67,22 +76,17 @@ questRoutes.get('/quests', requireAuth, async (c) => {
 })
 
 // Get quest history
-questRoutes.get('/quests/history', requireAuth, async (c) => {
+questRoutes.get('/quests/history', requireAuth, zValidator('query', questHistoryQuerySchema), async (c) => {
   const user = c.get('user')!
+  const query = c.req.valid('query')
 
   try {
-    const limit = parseInt(c.req.query('limit') ?? '30')
-    const offset = parseInt(c.req.query('offset') ?? '0')
-    const daysBack = parseInt(c.req.query('daysBack') ?? '30')
-    const status = c.req.query('status') as 'COMPLETED' | 'FAILED' | 'ACTIVE' | undefined
-    const type = c.req.query('type') as 'DAILY' | 'WEEKLY' | undefined
-
     const result = await getQuestHistory(user.id, {
-      limit,
-      offset,
-      daysBack,
-      status,
-      type,
+      limit: query.limit,
+      offset: query.offset,
+      daysBack: query.daysBack,
+      status: query.status,
+      type: query.type,
     })
 
     return c.json(result)
@@ -159,12 +163,12 @@ questRoutes.get('/quests/:id', requireAuth, async (c) => {
 })
 
 // Complete quest
-questRoutes.post('/quests/:id/complete', requireAuth, async (c) => {
+questRoutes.post('/quests/:id/complete', requireAuth, zValidator('json', questProgressDataSchema), async (c) => {
   const user = c.get('user')!
   const questId = c.req.param('id')
+  const body = c.req.valid('json')
 
   try {
-    const body = await c.req.json<{ data: Record<string, number | boolean> }>()
     const result = await updateQuestProgress(questId, user.id, body.data)
 
     return c.json({
@@ -471,17 +475,12 @@ questRoutes.get('/quests/targets/:templateId', requireAuth, async (c) => {
 })
 
 // PUT /api/quests/targets/:templateId - Set manual target override
-questRoutes.put('/quests/targets/:templateId', requireAuth, async (c) => {
+questRoutes.put('/quests/targets/:templateId', requireAuth, zValidator('json', setTargetSchema), async (c) => {
   const user = c.get('user')!
   const templateId = c.req.param('templateId')
+  const body = c.req.valid('json')
 
   try {
-    const body = await c.req.json<{ target: number }>()
-
-    if (typeof body.target !== 'number' || body.target <= 0) {
-      return c.json({ error: 'target must be a positive number' }, 400)
-    }
-
     const updated = await setManualTarget(user.id, templateId, body.target)
 
     return c.json({
@@ -596,11 +595,11 @@ questRoutes.get('/quests/challenge/progress', requireAuth, async (c) => {
 })
 
 // Complete today's challenge
-questRoutes.post('/quests/challenge/complete', requireAuth, async (c) => {
+questRoutes.post('/quests/challenge/complete', requireAuth, zValidator('json', challengeCompleteSchema), async (c) => {
   const user = c.get('user')!
+  const body = c.req.valid('json')
 
   try {
-    const body = await c.req.json<{ challengeId: string }>()
     const result = await completeChallenge(user.id, body.challengeId)
 
     return c.json({
@@ -616,9 +615,10 @@ questRoutes.post('/quests/challenge/complete', requireAuth, async (c) => {
 })
 
 // Get challenge history
-questRoutes.get('/quests/challenge/history', requireAuth, async (c) => {
+questRoutes.get('/quests/challenge/history', requireAuth, zValidator('query', daysBackSchema), async (c) => {
   const user = c.get('user')!
-  const limit = parseInt(c.req.query('limit') ?? '7', 10)
+  const query = c.req.valid('query')
+  const limit = query.days
 
   try {
     const history = await getChallengeHistory(user.id, limit)

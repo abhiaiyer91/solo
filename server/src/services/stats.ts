@@ -223,13 +223,15 @@ export async function calculateStat(
   const total = Math.min(100, baselineValue + activityValue + streakValue)
 
   const benchmarks = getBenchmarksForStat(statType)
-  const current = getCurrentBenchmark(total, benchmarks)
-  const next = getNextMilestone(total, benchmarks)
+  const current = getCurrentBenchmark(statType, total)
+  const next = getNextMilestone(statType, total)
 
   // Calculate progress to next milestone
   let progressToNext = 100
-  if (next) {
-    progressToNext = Math.round(((total - current.value) / (next.value - current.value)) * 100)
+  const defaultBenchmark: StatBenchmark = { value: 10, label: 'Baseline', description: 'Starting point', realWorld: 'Beginning journey' }
+  const currentBenchmark = current ?? defaultBenchmark
+  if (next && currentBenchmark) {
+    progressToNext = Math.round(((total - currentBenchmark.value) / (next.value - currentBenchmark.value)) * 100)
   }
 
   return {
@@ -241,11 +243,11 @@ export async function calculateStat(
       streak: streakValue,
     },
     benchmark: {
-      current,
+      current: currentBenchmark,
       next,
       progressToNext,
     },
-    howToImprove: getImprovementSuggestions(statType),
+    howToImprove: getImprovementSuggestions(statType, total),
   }
 }
 

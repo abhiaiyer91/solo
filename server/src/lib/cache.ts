@@ -29,8 +29,12 @@ interface CacheConfig {
 class CacheStore {
   private store = new Map<string, CacheEntry<unknown>>()
   private cleanupInterval: NodeJS.Timeout | null = null
+  private hits = 0
+  private misses = 0
+  private maxSize: number
 
-  constructor() {
+  constructor(maxSize = 1000) {
+    this.maxSize = maxSize
     // Start cleanup interval
     this.cleanupInterval = setInterval(() => {
       this.cleanup()
@@ -42,14 +46,19 @@ class CacheStore {
    */
   get<T>(key: string): T | null {
     const entry = this.store.get(key)
-    
-    if (!entry) return null
-    
-    if (entry.expiresAt < Date.now()) {
-      this.store.delete(key)
+
+    if (!entry) {
+      this.misses++
       return null
     }
-    
+
+    if (entry.expiresAt < Date.now()) {
+      this.store.delete(key)
+      this.misses++
+      return null
+    }
+
+    this.hits++
     return entry.data as T
   }
 
@@ -57,6 +66,12 @@ class CacheStore {
    * Set a cached value
    */
   set<T>(key: string, data: T, ttlSeconds: number, tags: string[] = []): void {
+    // Evict oldest entries if at capacity (LRU-like behavior)
+    if (this.store.size >= this.maxSize && !this.store.has(key)) {
+      const firstKey = this.store.keys().next().value
+      if (firstKey) this.store.delete(firstKey)
+    }
+
     this.store.set(key, {
       data,
       expiresAt: Date.now() + ttlSeconds * 1000,
@@ -111,9 +126,14 @@ class CacheStore {
   /**
    * Get cache statistics
    */
-  stats(): { size: number; keys: string[] } {
+  stats(): { size: number; maxSize: number; hits: number; misses: number; hitRate: number; keys: string[] } {
+    const total = this.hits + this.misses
     return {
       size: this.store.size,
+      maxSize: this.maxSize,
+      hits: this.hits,
+      misses: this.misses,
+      hitRate: total > 0 ? Math.round((this.hits / total) * 100) : 0,
       keys: Array.from(this.store.keys()),
     }
   }

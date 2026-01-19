@@ -1,6 +1,8 @@
 import { Hono } from 'hono'
+import { zValidator } from '@hono/zod-validator'
 import { requireAuth } from '../middleware/auth'
 import { logger } from '../lib/logger'
+import { questProgressDataSchema } from '../lib/validation/schemas'
 import { updateQuestProgress } from '../services/quest'
 import {
   checkReturnProtocolOffer,
@@ -217,9 +219,10 @@ featuresRoutes.get('/day/reconciliation', requireAuth, async (c) => {
 })
 
 // Submit reconciliation for a quest item
-featuresRoutes.post('/day/reconciliation/:questId', requireAuth, async (c) => {
+featuresRoutes.post('/day/reconciliation/:questId', requireAuth, zValidator('json', questProgressDataSchema), async (c) => {
   const user = c.get('user')!
   const questId = c.req.param('questId')
+  const body = c.req.valid('json')
 
   try {
     // Check if day is already closed
@@ -228,7 +231,6 @@ featuresRoutes.post('/day/reconciliation/:questId', requireAuth, async (c) => {
       return c.json({ error: 'Day is already closed' }, 400)
     }
 
-    const body = await c.req.json<{ data: Record<string, number | boolean> }>()
     const result = await updateQuestProgress(questId, user.id, body.data)
 
     return c.json({

@@ -10,12 +10,113 @@ Analyze the codebase, documentation, and current progress to identify gaps and g
 
 **Options:**
 - No args: Full analysis and task generation
+- `--quick`: Fast pipeline health check without creating files (~10 seconds)
+- `--summary`: Show recent ideation history
 - `--scan-only`: Analyze without creating tasks
 - `--focus <area>`: Focus on specific area (frontend, backend, mobile, etc.)
 - `--from-spec <file>`: Generate tasks from a specific spec/doc file
 - `--topic <description>`: Create planning docs and tasks from a new idea/topic
 
-## Instructions
+## Quick Mode (--quick)
+
+When using `--quick`, perform a fast pipeline health check without creating any files:
+
+1. Read `docs/planning/tasks/manifest.json` to get task counts
+2. Do a quick grep for TODOs in the codebase
+3. Check for docs without corresponding tasks
+
+**Output format:**
+```
+IDEATION CHECK
+═══════════════════════════════════════
+
+Task Pipeline:
+  Total: 142 tasks
+  Completed: 119 (84%)
+  Available: 22
+  In Progress: 1
+  Blocked: 0
+
+Pipeline Status: ✓ HEALTHY
+  Available tasks (22) > threshold (5)
+  No immediate ideation needed
+
+Quick Gap Scan:
+  Docs without tasks: 3 files
+  TODOs in code: ~15 items
+  Untested services: ~20 files
+
+Recommendation: Pipeline healthy, run full ideation after next sprint
+
+Last full ideation: 2026-01-18
+```
+
+**When to recommend full ideation:**
+- Available tasks < 5 (threshold)
+- Blocked tasks > available tasks
+- Last ideation was more than 7 days ago
+- Many docs without corresponding tasks
+
+```
+Recommendation: ⚠ RUN FULL IDEATION
+
+Reasons:
+- Available tasks (3) < threshold (5)
+- Last ideation was 7 days ago
+
+Run: /ideation-loop
+Or:  /ideation-loop --focus backend
+```
+
+**Important:** Quick mode must NOT:
+- Create any files
+- Modify manifest.json
+- Take more than ~10 seconds
+
+---
+
+## Summary Mode (--summary)
+
+When using `--summary`, show the ideation history:
+
+1. Read `docs/planning/gaps-and-priorities.md` for ideation sessions
+2. Parse manifest.json to find tasks by `source` field
+3. Calculate statistics
+
+**Output format:**
+```
+IDEATION HISTORY
+═══════════════════════════════════════
+
+Recent Sessions:
+
+2026-01-19 - Skills Retrospective
+  Source: skills-retrospective
+  Tasks created: 4
+  Focus: Tooling improvements
+
+2026-01-18 - Retrospective & Future Direction
+  Source: --topic "reflection and retrospective..."
+  Tasks created: 9
+  Focus: Mobile-first, content, infrastructure
+
+2026-01-18 - Infrastructure & Mobile
+  Source: Full analysis
+  Tasks created: 15
+  Focus: Mobile parity, backend maintenance
+
+Total ideation sessions: 8
+Total tasks generated: 142
+Active tasks remaining: 23
+```
+
+**Important:** Summary mode must NOT:
+- Create any files
+- Modify any documents
+
+---
+
+## Full Ideation Instructions
 
 ### Step 1: Current State Analysis
 

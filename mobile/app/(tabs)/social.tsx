@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { useState, useCallback } from 'react';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SystemWindow } from '@/components/SystemWindow';
 import { useGuild } from '@/hooks/useGuild';
@@ -90,6 +90,7 @@ function LeaderboardItem({ rank, player, isCurrentUser }: LeaderboardItemProps) 
 }
 
 function GuildSection() {
+  const router = useRouter();
   const { guild, isLoading, isInGuild } = useGuild();
 
   if (isLoading) {
@@ -173,8 +174,9 @@ function GuildSection() {
         </View>
       </SystemWindow>
 
-      <Link href={`/guild/${guild?.id}`} asChild>
-        <Pressable style={({ pressed }) => ({
+      <Pressable 
+        onPress={() => router.push('/guild-browser')}
+        style={({ pressed }) => ({
           marginTop: 12,
           padding: 14,
           borderWidth: 1,
@@ -183,18 +185,19 @@ function GuildSection() {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-        })}>
-          <Text style={{ color: '#60A5FA', fontWeight: '500' }}>
-            View Guild Details
-          </Text>
-          <Ionicons name="chevron-forward" size={16} color="#60A5FA" style={{ marginLeft: 4 }} />
-        </Pressable>
-      </Link>
+        })}
+      >
+        <Text style={{ color: '#60A5FA', fontWeight: '500' }}>
+          View Guild Details
+        </Text>
+        <Ionicons name="chevron-forward" size={16} color="#60A5FA" style={{ marginLeft: 4 }} />
+      </Pressable>
     </View>
   );
 }
 
 export default function SocialScreen() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('leaderboard');
   const [refreshing, setRefreshing] = useState(false);
   const { leaderboard, currentUserRank, isLoading, refetch } = useLeaderboard();

@@ -7,6 +7,22 @@ import { xpToNextLevel } from '../../services/level'
 import { getStreakBonus } from '../../services/streak'
 
 /**
+ * System phase based on player's journey duration
+ * The System's voice evolves as it learns the player
+ */
+export type SystemPhase = 'observer' | 'challenger' | 'recognition' | 'witness'
+
+/**
+ * Get the System's current phase based on days since player started
+ */
+export function getSystemPhase(daysSinceStart: number): SystemPhase {
+  if (daysSinceStart < 15) return 'observer'
+  if (daysSinceStart < 31) return 'challenger'
+  if (daysSinceStart < 61) return 'recognition'
+  return 'witness'
+}
+
+/**
  * Player context data for narrative generation
  */
 export interface PlayerContext {
@@ -53,6 +69,10 @@ export interface PlayerContext {
   // Recent activity
   lastActivityDate: string | null
   daysSinceLastActivity: number | null
+
+  // Journey duration and System phase
+  daysSinceStart: number
+  systemPhase: SystemPhase
 
   // Today's progress
   todayProgress: {
@@ -154,6 +174,16 @@ async function fetchPlayerContext(userId: string): Promise<PlayerContext | null>
         }
       : null
 
+    // Calculate days since user started their journey
+    const createdAt = new Date(user.createdAt)
+    createdAt.setHours(0, 0, 0, 0)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const daysSinceStart = Math.floor(
+      (today.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
+    )
+    const systemPhase = getSystemPhase(daysSinceStart)
+
     return {
       userId,
       level: user.level,
@@ -174,6 +204,8 @@ async function fetchPlayerContext(userId: string): Promise<PlayerContext | null>
       activeTitle,
       lastActivityDate,
       daysSinceLastActivity,
+      daysSinceStart,
+      systemPhase,
       todayProgress,
     }
   } catch (error) {
@@ -206,6 +238,8 @@ export const getPlayerContextTool = createTool({
         hasDebuff: z.boolean(),
         activeTitle: z.string().nullable(),
         daysSinceLastActivity: z.number().nullable(),
+        daysSinceStart: z.number(),
+        systemPhase: z.enum(['observer', 'challenger', 'recognition', 'witness']),
         streakTier: z.enum(['none', 'bronze', 'silver', 'gold']),
         streakBonusPercent: z.number(),
         stats: z.object({
@@ -249,6 +283,8 @@ export const getPlayerContextTool = createTool({
         hasDebuff: playerContext.hasDebuff,
         activeTitle: playerContext.activeTitle?.name ?? null,
         daysSinceLastActivity: playerContext.daysSinceLastActivity,
+        daysSinceStart: playerContext.daysSinceStart,
+        systemPhase: playerContext.systemPhase,
         streakTier: playerContext.streakBonus.tier,
         streakBonusPercent: playerContext.streakBonus.percent,
         stats: playerContext.stats,

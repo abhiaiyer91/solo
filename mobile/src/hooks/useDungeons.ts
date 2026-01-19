@@ -1,125 +1,102 @@
 /**
  * Dungeons Hook (Mobile)
- * 
+ *
  * Manages dungeon data and actions.
  */
 
-import { useState, useEffect, useCallback } from 'react'
-import { api } from '../lib/api'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { api, queryKeys } from '../lib/api'
 
 interface Dungeon {
   id: string
   name: string
-  description: string
-  levelRequired: number
-  difficulty: 'easy' | 'medium' | 'hard' | 'nightmare'
-  durationDays: number
+  description?: string
+  rank: string
+  timeLimit: number
   xpReward: number
-  status: 'locked' | 'available' | 'active' | 'completed'
-  progress?: number
+  requirements?: { level?: number }
+  isActive?: boolean
 }
 
-interface DungeonDetails extends Dungeon {
-  phases: Array<{
-    phaseNumber: number
-    name: string
-    durationDays: number
-    requirements: Array<{
-      type: string
-      value: number
-      description: string
-    }>
-  }>
-  currentPhase?: number
-  phaseProgress?: number
+interface ActiveDungeon {
+  id: string
+  name: string
+  rank: string
+  progress: number
+  timeRemaining: number
+  questsCompleted: number
+  totalQuests: number
 }
 
-interface UseDungeonsReturn {
+interface CompletedDungeon {
+  id: string
+  dungeonName: string
+  rank: string
+  xpEarned: number
+  completedAt: string
+}
+
+interface DungeonsResponse {
   dungeons: Dungeon[]
-  activeDungeon: DungeonDetails | null
-  isLoading: boolean
-  error: string | null
-  refetch: () => Promise<void>
-  enterDungeon: (dungeonId: string) => Promise<{ success: boolean; error?: string }>
-  abandonDungeon: () => Promise<{ success: boolean; error?: string }>
+  activeDungeon: ActiveDungeon | null
+  completedDungeons: CompletedDungeon[]
+  totalCleared: number
 }
 
-export function useDungeons(): UseDungeonsReturn {
-  const [dungeons, setDungeons] = useState<Dungeon[]>([])
-  const [activeDungeon, setActiveDungeon] = useState<DungeonDetails | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+export function useDungeons() {
+  const queryClient = useQueryClient()
 
-  const fetchDungeons = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const response = await api.get('/dungeons')
-      
-      if (response.error) {
-        throw new Error(response.error)
+  const query = useQuery({
+    queryKey: ['dungeons'],
+    queryFn: async () => {
+      try {
+        const response = await api.get<DungeonsResponse>('/api/dungeons')
+        return response
+      } catch {
+        // Return sample data for development
+        return {
+          dungeons: getSampleDungeons(),
+          activeDungeon: null,
+          completedDungeons: [],
+          totalCleared: 0,
+        }
       }
+    },
+    staleTime: 1000 * 30, // 30 seconds
+  })
 
-      setDungeons(response.dungeons || [])
-      setActiveDungeon(response.active || null)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load dungeons')
-      // Set sample data for development
-      setDungeons(getSampleDungeons())
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+  const startMutation = useMutation({
+    mutationFn: async (dungeonId: string) => {
+      return api.post(`/api/dungeons/${dungeonId}/start`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dungeons'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.quests() })
+    },
+  })
 
-  useEffect(() => {
-    fetchDungeons()
-  }, [fetchDungeons])
-
-  const enterDungeon = useCallback(async (dungeonId: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const response = await api.post(`/dungeons/${dungeonId}/enter`)
-      
-      if (response.error) {
-        return { success: false, error: response.error }
-      }
-
-      // Refetch to update state
-      await fetchDungeons()
-      return { success: true }
-    } catch (e) {
-      return { success: false, error: 'Failed to enter dungeon' }
-    }
-  }, [fetchDungeons])
-
-  const abandonDungeon = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
-    if (!activeDungeon) {
-      return { success: false, error: 'No active dungeon' }
-    }
-
-    try {
-      const response = await api.post(`/dungeons/${activeDungeon.id}/abandon`)
-      
-      if (response.error) {
-        return { success: false, error: response.error }
-      }
-
-      setActiveDungeon(null)
-      await fetchDungeons()
-      return { success: true }
-    } catch (e) {
-      return { success: false, error: 'Failed to abandon dungeon' }
-    }
-  }, [activeDungeon, fetchDungeons])
+  const abandonMutation = useMutation({
+    mutationFn: async (dungeonId: string) => {
+      return api.post(`/api/dungeons/${dungeonId}/abandon`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dungeons'] })
+    },
+  })
 
   return {
-    dungeons,
-    activeDungeon,
-    isLoading,
-    error,
-    refetch: fetchDungeons,
-    enterDungeon,
-    abandonDungeon,
+    dungeons: query.data?.dungeons ?? [],
+    activeDungeon: query.data?.activeDungeon ?? null,
+    completedDungeons: query.data?.completedDungeons ?? [],
+    totalCleared: query.data?.totalCleared ?? 0,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
+    startDungeon: startMutation.mutate,
+    abandonDungeon: abandonMutation.mutate,
+    isStarting: startMutation.isPending,
+    isAbandoning: abandonMutation.isPending,
   }
 }
 
@@ -132,41 +109,37 @@ function getSampleDungeons(): Dungeon[] {
       id: 'dungeon-1',
       name: 'The Cave of Consistency',
       description: 'Master the art of daily discipline through 7 days of unbroken habit.',
-      levelRequired: 5,
-      difficulty: 'easy',
-      durationDays: 7,
+      rank: 'E',
+      timeLimit: 60,
       xpReward: 500,
-      status: 'available',
+      requirements: { level: 5 },
     },
     {
       id: 'dungeon-2',
       name: 'The Tower of Endurance',
       description: 'Push your limits with enhanced workout requirements.',
-      levelRequired: 10,
-      difficulty: 'medium',
-      durationDays: 14,
+      rank: 'D',
+      timeLimit: 90,
       xpReward: 1000,
-      status: 'locked',
+      requirements: { level: 10 },
     },
     {
       id: 'dungeon-3',
       name: 'The Abyss of Discipline',
       description: 'Face the ultimate test of mental and physical fortitude.',
-      levelRequired: 20,
-      difficulty: 'hard',
-      durationDays: 21,
+      rank: 'C',
+      timeLimit: 120,
       xpReward: 2000,
-      status: 'locked',
+      requirements: { level: 20 },
     },
     {
       id: 'dungeon-4',
       name: 'The Void',
       description: 'A nightmare dungeon for only the most dedicated Hunters.',
-      levelRequired: 30,
-      difficulty: 'nightmare',
-      durationDays: 30,
+      rank: 'B',
+      timeLimit: 180,
       xpReward: 5000,
-      status: 'locked',
+      requirements: { level: 30 },
     },
   ]
 }

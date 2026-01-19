@@ -1,9 +1,10 @@
 import { ReactNode } from 'react';
-import { View, ViewStyle, StyleSheet } from 'react-native';
+import { View, Text, ViewStyle, StyleSheet } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
-interface SystemWindowProps {
+export interface SystemWindowProps {
   children: ReactNode;
+  title?: string;
   variant?: 'default' | 'warning' | 'success' | 'error';
   style?: ViewStyle;
 }
@@ -30,6 +31,7 @@ const glowColors = {
  */
 export function SystemWindow({
   children,
+  title,
   variant = 'default',
   style,
 }: SystemWindowProps) {
@@ -46,6 +48,12 @@ export function SystemWindow({
         style,
       ]}
     >
+      {title && (
+        <View style={styles.titleContainer}>
+          <View style={styles.titleDot} />
+          <Text style={styles.titleText}>{title}</Text>
+        </View>
+      )}
       {children}
     </Animated.View>
   );
@@ -62,6 +70,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 8,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  titleDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#60A5FA',
+    marginRight: 8,
+  },
+  titleText: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+    fontWeight: 'bold',
+    color: '#60A5FA',
+    letterSpacing: 1,
   },
 });
 

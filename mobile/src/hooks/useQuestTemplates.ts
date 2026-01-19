@@ -1,229 +1,144 @@
 /**
- * Quest Templates Hook
- *
- * Fetches and manages quest templates for activation/deactivation.
+ * useQuestTemplates - Hook for fetching and managing quest templates
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, queryKeys } from '@/lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { api } from '@/lib/api'
 
-export type QuestType = 'DAILY' | 'WEEKLY' | 'DUNGEON' | 'BOSS';
-export type QuestCategory = 'MOVEMENT' | 'STRENGTH' | 'RECOVERY' | 'NUTRITION' | 'DISCIPLINE';
-export type StatType = 'STR' | 'AGI' | 'VIT' | 'DISC';
+export type QuestCategory = 'MOVEMENT' | 'TRAINING' | 'RECOVERY' | 'MINDSET' | 'NUTRITION'
+export type QuestType = 'DAILY' | 'WEEKLY' | 'ROTATING' | 'BONUS' | 'DUNGEON' | 'BOSS'
+
+export interface QuestRequirement {
+  type: 'numeric' | 'boolean' | 'time'
+  metric?: string
+  operator?: 'gte' | 'lte' | 'eq'
+  value?: number
+}
 
 export interface QuestTemplate {
-  id: string;
-  name: string;
-  description: string;
-  type: QuestType;
-  category: QuestCategory;
-  baseXP: number;
-  statType: StatType;
-  statBonus: number;
-  isCore: boolean;
-  isActive: boolean;
+  id: string
+  name: string
+  description: string
+  type: QuestType
+  category: QuestCategory
+  baseXP: number
+  statType: 'STR' | 'AGI' | 'VIT' | 'DISC'
+  statBonus: number
+  isCore: boolean
+  isActive?: boolean
+  requirement?: QuestRequirement
+  allowPartial?: boolean
+  minPartialPercent?: number
 }
 
 interface QuestTemplatesResponse {
-  templates: QuestTemplate[];
+  core: QuestTemplate[]
+  bonus: QuestTemplate[]
+  weekly: QuestTemplate[]
+  special: QuestTemplate[]
 }
 
-interface ActivateResponse {
-  quest: unknown;
-  message: string;
+async function fetchQuestTemplates(): Promise<QuestTemplatesResponse> {
+  return api.get<QuestTemplatesResponse>('/api/quests/templates')
 }
 
-interface DeactivateResponse {
-  deactivated: boolean;
-  message: string;
+async function toggleQuestActive(params: { templateId: string; isActive: boolean }): Promise<void> {
+  await api.post('/api/quests/templates/toggle', params)
 }
 
 export function useQuestTemplates() {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
   const query = useQuery({
     queryKey: ['quest-templates'],
-    queryFn: async () => {
-      try {
-        const response = await api.get<QuestTemplatesResponse>('/api/quests/templates');
-        return response.templates ?? [];
-      } catch {
-        // Return sample data for development
-        return generateSampleTemplates();
+    queryFn: fetchQuestTemplates,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+
+  const toggleMutation = useMutation({
+    mutationFn: toggleQuestActive,
+    onMutate: async (params) => {
+      // Optimistic update
+      await queryClient.cancelQueries({ queryKey: ['quest-templates'] })
+      
+      const previous = queryClient.getQueryData<QuestTemplatesResponse>(['quest-templates'])
+      
+      if (previous) {
+        const updated = { ...previous }
+        // Update the bonus quest
+        updated.bonus = updated.bonus.map((q) =>
+          q.id === params.templateId ? { ...q, isActive: params.isActive } : q
+        )
+        queryClient.setQueryData(['quest-templates'], updated)
+      }
+
+      return { previous }
+    },
+    onError: (_, __, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['quest-templates'], context.previous)
       }
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-
-  const activateMutation = useMutation({
-    mutationFn: async (templateId: string) => {
-      return api.post<ActivateResponse>(`/api/quests/activate/${templateId}`);
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['quest-templates'] })
+      queryClient.invalidateQueries({ queryKey: ['quests'] })
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quest-templates'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.quests() });
-    },
-  });
+  })
 
-  const deactivateMutation = useMutation({
-    mutationFn: async (templateId: string) => {
-      return api.post<DeactivateResponse>(`/api/quests/deactivate/${templateId}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quest-templates'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.quests() });
-    },
-  });
+  // Activate/deactivate functions for individual quests
+  const activateQuest = (templateId: string, options?: { onSuccess?: () => void; onError?: () => void }) => {
+    toggleMutation.mutate(
+      { templateId, isActive: true },
+      {
+        onSuccess: options?.onSuccess,
+        onError: options?.onError,
+      }
+    )
+  }
 
-  const templates = query.data ?? [];
-
-  // Group by type
-  const coreQuests = templates.filter((t) => t.isCore);
-  const bonusDaily = templates.filter((t) => t.type === 'DAILY' && !t.isCore);
-  const weeklyQuests = templates.filter((t) => t.type === 'WEEKLY');
-  const specialQuests = templates.filter((t) => !['DAILY', 'WEEKLY'].includes(t.type));
+  const deactivateQuest = (templateId: string, options?: { onSuccess?: () => void; onError?: () => void }) => {
+    toggleMutation.mutate(
+      { templateId, isActive: false },
+      {
+        onSuccess: options?.onSuccess,
+        onError: options?.onError,
+      }
+    )
+  }
 
   return {
-    templates,
-    coreQuests,
-    bonusDaily,
-    weeklyQuests,
-    specialQuests,
-
+    coreQuests: query.data?.core ?? [],
+    bonusQuests: query.data?.bonus ?? [],
+    bonusDaily: query.data?.bonus ?? [], // Alias for compatibility
+    weeklyQuests: query.data?.weekly ?? [],
+    specialQuests: query.data?.special ?? [],
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
     refetch: query.refetch,
-
-    activateQuest: activateMutation.mutate,
-    isActivating: activateMutation.isPending,
-    activatingId: activateMutation.variables,
-
-    deactivateQuest: deactivateMutation.mutate,
-    isDeactivating: deactivateMutation.isPending,
-    deactivatingId: deactivateMutation.variables,
-  };
+    toggleQuest: toggleMutation.mutate,
+    activateQuest,
+    deactivateQuest,
+    activatingId: toggleMutation.isPending && toggleMutation.variables?.isActive ? toggleMutation.variables.templateId : undefined,
+    deactivatingId: toggleMutation.isPending && !toggleMutation.variables?.isActive ? toggleMutation.variables.templateId : undefined,
+    isToggling: toggleMutation.isPending,
+  }
 }
 
 /**
- * Generate sample template data for development
+ * Hook for bonus quest management
  */
-function generateSampleTemplates(): QuestTemplate[] {
-  return [
-    // Core quests
-    {
-      id: 'core-steps',
-      name: 'Walk 10,000 Steps',
-      description: 'Track your daily steps to build endurance.',
-      type: 'DAILY',
-      category: 'MOVEMENT',
-      baseXP: 50,
-      statType: 'AGI',
-      statBonus: 1,
-      isCore: true,
-      isActive: true,
-    },
-    {
-      id: 'core-workout',
-      name: 'Complete a Workout',
-      description: 'Any physical exercise counts towards your strength.',
-      type: 'DAILY',
-      category: 'STRENGTH',
-      baseXP: 75,
-      statType: 'STR',
-      statBonus: 1,
-      isCore: true,
-      isActive: true,
-    },
-    {
-      id: 'core-sleep',
-      name: 'Get 7+ Hours of Sleep',
-      description: 'Rest is essential for recovery and growth.',
-      type: 'DAILY',
-      category: 'RECOVERY',
-      baseXP: 50,
-      statType: 'VIT',
-      statBonus: 1,
-      isCore: true,
-      isActive: true,
-    },
+export function useBonusQuests() {
+  const { bonusQuests, toggleQuest, isToggling } = useQuestTemplates()
+  
+  const activeQuests = bonusQuests.filter((q) => q.isActive !== false)
+  const inactiveQuests = bonusQuests.filter((q) => q.isActive === false)
 
-    // Bonus daily
-    {
-      id: 'bonus-meditation',
-      name: '10 Min Meditation',
-      description: 'Clear your mind and build mental discipline.',
-      type: 'DAILY',
-      category: 'DISCIPLINE',
-      baseXP: 40,
-      statType: 'DISC',
-      statBonus: 1,
-      isCore: false,
-      isActive: false,
-    },
-    {
-      id: 'bonus-hydration',
-      name: 'Drink 8 Glasses of Water',
-      description: 'Stay hydrated to maintain peak performance.',
-      type: 'DAILY',
-      category: 'NUTRITION',
-      baseXP: 30,
-      statType: 'VIT',
-      statBonus: 1,
-      isCore: false,
-      isActive: true,
-    },
-    {
-      id: 'bonus-stretch',
-      name: 'Morning Stretch Routine',
-      description: 'Increase flexibility and prevent injuries.',
-      type: 'DAILY',
-      category: 'RECOVERY',
-      baseXP: 25,
-      statType: 'AGI',
-      statBonus: 1,
-      isCore: false,
-      isActive: false,
-    },
-
-    // Weekly
-    {
-      id: 'weekly-consistency',
-      name: 'Weekly Consistency',
-      description: 'Complete all core quests for 5 days this week.',
-      type: 'WEEKLY',
-      category: 'DISCIPLINE',
-      baseXP: 200,
-      statType: 'DISC',
-      statBonus: 3,
-      isCore: false,
-      isActive: true,
-    },
-    {
-      id: 'weekly-steps',
-      name: 'Weekly Steps Challenge',
-      description: 'Accumulate 70,000 steps over the week.',
-      type: 'WEEKLY',
-      category: 'MOVEMENT',
-      baseXP: 150,
-      statType: 'AGI',
-      statBonus: 2,
-      isCore: false,
-      isActive: true,
-    },
-
-    // Special
-    {
-      id: 'dungeon-fasting',
-      name: 'Intermittent Fasting',
-      description: 'Complete a 16-hour fasting window.',
-      type: 'DUNGEON',
-      category: 'DISCIPLINE',
-      baseXP: 100,
-      statType: 'DISC',
-      statBonus: 2,
-      isCore: false,
-      isActive: false,
-    },
-  ];
+  return {
+    activeQuests,
+    inactiveQuests,
+    allQuests: bonusQuests,
+    toggleQuest,
+    isToggling,
+  }
 }

@@ -24,6 +24,12 @@ import onboardingRoutes from './routes/onboarding'
 import bodyRoutes from './routes/body'
 import statsRoutes from './routes/stats'
 import { nutritionRoutes } from './routes/nutrition'
+import analyticsRoutes from './routes/analytics'
+import adminRoutes from './routes/admin'
+import exerciseRoutes from './routes/exercises'
+import customQuestRoutes from './routes/custom-quests'
+import profileCustomizationRoutes from './routes/profile'
+import narrativeRoutes from './routes/narrative'
 
 // Boss service imports
 import {
@@ -102,6 +108,12 @@ app.route('/api', onboardingRoutes)
 app.route('/api', bodyRoutes)
 app.route('/api', statsRoutes)
 app.route('/api', nutritionRoutes)
+app.route('/api/analytics', analyticsRoutes)
+app.route('/api/admin', adminRoutes)
+app.route('/api/exercises', exerciseRoutes)
+app.route('/api/custom-quests', customQuestRoutes)
+app.route('/api/profile', profileCustomizationRoutes)
+app.route('/api/narrative', narrativeRoutes)
 
 // Boss routes
 // GET /api/bosses - Get all available bosses for the user

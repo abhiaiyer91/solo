@@ -8,30 +8,17 @@ import { useRouter } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { MobileOnboarding, type OnboardingData } from '@/components/Onboarding';
-import { useAuthStore } from '@/stores/auth';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
+import { api } from '@/lib/api';
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { token } = useAuthStore();
   const [showSkip, setShowSkip] = useState(false);
 
   // Mutation to complete onboarding
   const completeOnboarding = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`${API_URL}/api/player/onboarding/complete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!res.ok) {
-        throw new Error('Failed to complete onboarding');
-      }
-      return res.json();
+      return api.post('/api/player/onboarding/complete', {});
     },
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

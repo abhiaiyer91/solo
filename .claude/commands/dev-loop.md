@@ -49,7 +49,16 @@ This command invokes the **task-automation** skill to:
 3. **Execute** - Spawn agent(s) to complete work
 4. **Verify** - Run builds, check acceptance criteria
 5. **Update** - Mark tasks completed in manifest
-6. **Loop** - Continue or prompt based on options
+6. **Cleanup** - Auto-purge completed tasks from manifest (keeps it lean)
+7. **Loop** - Continue or prompt based on options
+
+### Automatic Manifest Cleanup
+
+Completed tasks are automatically removed from the manifest after each cycle. This keeps the manifest focused on actionable work:
+- **Before**: 95+ tasks accumulate over time, most completed
+- **After**: Only available, in_progress, blocked tasks remain
+
+Task spec files in `docs/planning/tasks/*.md` are preserved for historical reference.
 
 ## Parallel Mode
 

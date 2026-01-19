@@ -268,3 +268,135 @@ export type GuildRole = z.infer<typeof guildRoleSchema>
 export type HealthSyncRequest = z.infer<typeof healthSyncRequestSchema>
 export type LogMealInput = z.infer<typeof logMealSchema>
 export type CompleteQuestInput = z.infer<typeof completeQuestSchema>
+
+// ============================================================
+// Quest Progress Schemas
+// ============================================================
+
+export const questProgressDataSchema = z.object({
+  data: z.record(z.union([z.number(), z.boolean()])),
+})
+
+export const setTargetSchema = z.object({
+  target: positiveInt,
+})
+
+export const challengeCompleteSchema = z.object({
+  challengeId: uuidSchema,
+})
+
+export const questHistoryQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(30),
+  offset: z.coerce.number().int().nonnegative().default(0),
+  daysBack: z.coerce.number().int().min(1).max(365).default(30),
+  status: z.enum(['COMPLETED', 'FAILED', 'ACTIVE']).optional(),
+  type: z.enum(['DAILY', 'WEEKLY']).optional(),
+})
+
+// ============================================================
+// Notification Schemas
+// ============================================================
+
+export const updateNotificationPrefsSchema = z.object({
+  morningQuests: z.boolean().optional(),
+  milestones: z.boolean().optional(),
+  afternoonStatus: z.boolean().optional(),
+  reconciliation: z.boolean().optional(),
+  streaks: z.boolean().optional(),
+  levelUp: z.boolean().optional(),
+  boss: z.boolean().optional(),
+  quietHoursStart: z.coerce.number().int().min(0).max(23).optional(),
+  quietHoursEnd: z.coerce.number().int().min(0).max(23).optional(),
+})
+
+export const pushSubscriptionSchema = z.object({
+  endpoint: z.string().url(),
+  keys: z.object({
+    p256dh: z.string().min(1),
+    auth: z.string().min(1),
+  }),
+  expirationTime: z.number().nullable().optional(),
+})
+
+export const emailPrefsSchema = z.object({
+  emailEnabled: z.boolean().optional(),
+  weeklySummary: z.boolean().optional(),
+})
+
+// ============================================================
+// Body Composition Schemas
+// ============================================================
+
+export const bodySettingsSchema = z.object({
+  enabled: z.boolean(),
+  targetWeight: z.number().positive().max(1000).optional(),
+  targetCalories: z.number().int().positive().max(10000).optional(),
+})
+
+export const logBodyCompositionSchema = z.object({
+  date: dateString.optional(),
+  weight: z.number().positive().max(1000).optional(),
+  caloriesConsumed: nonNegativeInt.max(20000).optional(),
+  caloriesBurned: nonNegativeInt.max(10000).optional(),
+  basalMetabolicRate: positiveInt.max(5000).optional(),
+  bodyFatPercent: percentage.optional(),
+  muscleMass: z.number().positive().max(500).optional(),
+  waterPercent: percentage.optional(),
+  boneMass: z.number().positive().max(50).optional(),
+  notes: z.string().max(500).optional(),
+})
+
+// ============================================================
+// Onboarding Schemas
+// ============================================================
+
+export const baselineAssessmentSchema = z.object({
+  fitnessExperience: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
+  weightUnit: z.enum(['kg', 'lbs']).optional(),
+  pushUpsMax: z.coerce.number().int().min(0).max(500).optional(),
+  plankHoldSeconds: z.coerce.number().int().min(0).max(3600).optional(),
+  mileTimeMinutes: z.coerce.number().min(3).max(60).optional(),
+  workoutsPerWeek: z.coerce.number().int().min(0).max(21).optional(),
+  sleepHoursBaseline: z.coerce.number().min(0).max(24).optional(),
+  currentWeight: z.coerce.number().positive().max(1000).optional(),
+  targetWeight: z.coerce.number().positive().max(1000).optional(),
+  height: z.coerce.number().positive().max(300).optional(),
+  age: z.coerce.number().int().min(13).max(120).optional(),
+})
+
+export const psychologyResponseSchema = z.object({
+  message: z.string().min(1).max(2000),
+})
+
+export const psychologyCompleteSchema = z.object({
+  traits: z.object({
+    motivationStyle: z.enum(['intrinsic', 'extrinsic', 'balanced']).optional(),
+    responseToFailure: z.enum(['resilient', 'sensitive', 'avoidant']).optional(),
+    preferredPacing: z.enum(['aggressive', 'steady', 'cautious']).optional(),
+    socialOrientation: z.enum(['competitive', 'collaborative', 'independent']).optional(),
+  }).optional(),
+})
+
+// ============================================================
+// Player Profile Schemas
+// ============================================================
+
+export const VALID_TIMEZONES = [
+  'UTC',
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Los_Angeles',
+  'Europe/London',
+  'Europe/Paris',
+  'Europe/Berlin',
+  'Asia/Tokyo',
+  'Asia/Shanghai',
+  'Asia/Singapore',
+  'Australia/Sydney',
+] as const
+
+export const updatePlayerSchema = z.object({
+  timezone: z.enum(VALID_TIMEZONES).optional(),
+  name: z.string().min(1).max(50).transform(s => s.trim()).optional(),
+})

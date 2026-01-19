@@ -24,6 +24,10 @@ function createAuth() {
     baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
     basePath: '/api/auth',
     trustedOrigins: [process.env.FRONTEND_URL || 'http://localhost:5173'],
+    advanced: {
+      disableCSRFCheck: process.env.NODE_ENV !== 'production',
+      disableOriginCheck: process.env.NODE_ENV !== 'production',
+    },
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,

@@ -1,12 +1,18 @@
 /**
  * Body Composition API Routes
- * 
+ *
  * Endpoints for tracking weight, calories, and body composition.
  */
 
 import { Hono } from 'hono'
+import { zValidator } from '@hono/zod-validator'
 import { requireAuth } from '../middleware/auth'
 import { logger } from '../lib/logger'
+import {
+  bodySettingsSchema,
+  logBodyCompositionSchema,
+  daysBackSchema,
+} from '../lib/validation/schemas'
 import {
   logBodyComposition,
   getBodyCompositionProgress,
@@ -45,23 +51,18 @@ bodyRoutes.get('/body-composition/settings', requireAuth, async (c) => {
  * POST /body-composition/settings
  * Enable/disable body tracking
  */
-bodyRoutes.post('/body-composition/settings', requireAuth, async (c) => {
+bodyRoutes.post('/body-composition/settings', requireAuth, zValidator('json', bodySettingsSchema), async (c) => {
   const user = c.get('user')!
-  
+  const body = c.req.valid('json')
+
   try {
-    const body = await c.req.json<{
-      enabled: boolean
-      targetWeight?: number
-      targetCalories?: number
-    }>()
-    
     await setBodyTrackingEnabled(
       user.id,
       body.enabled,
       body.targetWeight,
       body.targetCalories
     )
-    
+
     return c.json({
       trackBodyComposition: body.enabled,
       message: body.enabled
@@ -78,9 +79,10 @@ bodyRoutes.post('/body-composition/settings', requireAuth, async (c) => {
  * POST /body-composition
  * Log a body composition entry
  */
-bodyRoutes.post('/body-composition', requireAuth, async (c) => {
+bodyRoutes.post('/body-composition', requireAuth, zValidator('json', logBodyCompositionSchema), async (c) => {
   const user = c.get('user')!
-  
+  const body = c.req.valid('json')
+
   try {
     // Check if tracking is enabled
     const enabled = await isBodyTrackingEnabled(user.id)
@@ -90,20 +92,7 @@ bodyRoutes.post('/body-composition', requireAuth, async (c) => {
         message: '[SYSTEM] Enable body tracking in settings to log entries.',
       }, 400)
     }
-    
-    const body = await c.req.json<{
-      date?: string
-      weight?: number
-      caloriesConsumed?: number
-      caloriesBurned?: number
-      basalMetabolicRate?: number
-      bodyFatPercent?: number
-      muscleMass?: number
-      waterPercent?: number
-      boneMass?: number
-      notes?: string
-    }>()
-    
+
     // Validate at least one field is provided
     if (
       body.weight === undefined &&
@@ -116,9 +105,9 @@ bodyRoutes.post('/body-composition', requireAuth, async (c) => {
         message: '[SYSTEM] Provide weight, calories, or body composition data.',
       }, 400)
     }
-    
+
     const log = await logBodyComposition(user.id, body)
-    
+
     return c.json({
       log,
       message: '[SYSTEM] Body composition logged.',
@@ -155,15 +144,14 @@ bodyRoutes.get('/body-composition/today', requireAuth, async (c) => {
  * GET /body-composition/progress
  * Get body composition progress summary
  */
-bodyRoutes.get('/body-composition/progress', requireAuth, async (c) => {
+bodyRoutes.get('/body-composition/progress', requireAuth, zValidator('query', daysBackSchema), async (c) => {
   const user = c.get('user')!
-  
+  const query = c.req.valid('query')
+  const days = query.days
+
   try {
-    const daysParam = c.req.query('days')
-    const days = daysParam ? parseInt(daysParam, 10) : 30
-    
     const progress = await getBodyCompositionProgress(user.id, days)
-    
+
     return c.json({
       ...progress,
       message: `[SYSTEM] ${days}-day progress retrieved.`,
@@ -178,15 +166,14 @@ bodyRoutes.get('/body-composition/progress', requireAuth, async (c) => {
  * GET /body-composition/weight-history
  * Get weight history for charting
  */
-bodyRoutes.get('/body-composition/weight-history', requireAuth, async (c) => {
+bodyRoutes.get('/body-composition/weight-history', requireAuth, zValidator('query', daysBackSchema), async (c) => {
   const user = c.get('user')!
-  
+  const query = c.req.valid('query')
+  const days = query.days
+
   try {
-    const daysParam = c.req.query('days')
-    const days = daysParam ? parseInt(daysParam, 10) : 90
-    
     const history = await getWeightHistory(user.id, days)
-    
+
     return c.json({
       history,
       message: '[SYSTEM] Weight history retrieved.',

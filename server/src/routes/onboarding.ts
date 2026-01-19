@@ -1,6 +1,12 @@
 import { Hono } from 'hono'
+import { zValidator } from '@hono/zod-validator'
 import { requireAuth } from '../middleware/auth'
 import { logger } from '../lib/logger'
+import {
+  baselineAssessmentSchema,
+  psychologyResponseSchema,
+  psychologyCompleteSchema,
+} from '../lib/validation/schemas'
 import {
   saveBaselineAssessment,
   getBaselineAssessment,
@@ -19,62 +25,12 @@ import type { BaselineAssessmentInput, PsychologyTraits } from '../db/schema'
 const onboardingRoutes = new Hono()
 
 // POST /api/onboarding/baseline - Save baseline assessment
-onboardingRoutes.post('/onboarding/baseline', requireAuth, async (c) => {
+onboardingRoutes.post('/onboarding/baseline', requireAuth, zValidator('json', baselineAssessmentSchema), async (c) => {
   const user = c.get('user')!
+  const body = c.req.valid('json')
 
   try {
-    const body = await c.req.json<BaselineAssessmentInput>()
-
-    // Validate fitness experience if provided
-    if (
-      body.fitnessExperience &&
-      !['beginner', 'intermediate', 'advanced'].includes(body.fitnessExperience)
-    ) {
-      return c.json(
-        { error: 'fitnessExperience must be beginner, intermediate, or advanced' },
-        400
-      )
-    }
-
-    // Validate weight unit if provided
-    if (body.weightUnit && !['kg', 'lbs'].includes(body.weightUnit)) {
-      return c.json({ error: 'weightUnit must be kg or lbs' }, 400)
-    }
-
-    // Validate numeric ranges
-    if (body.pushUpsMax !== undefined && (body.pushUpsMax < 0 || body.pushUpsMax > 500)) {
-      return c.json({ error: 'pushUpsMax must be between 0 and 500' }, 400)
-    }
-
-    if (
-      body.plankHoldSeconds !== undefined &&
-      (body.plankHoldSeconds < 0 || body.plankHoldSeconds > 3600)
-    ) {
-      return c.json({ error: 'plankHoldSeconds must be between 0 and 3600' }, 400)
-    }
-
-    if (
-      body.mileTimeMinutes !== undefined &&
-      (body.mileTimeMinutes < 3 || body.mileTimeMinutes > 60)
-    ) {
-      return c.json({ error: 'mileTimeMinutes must be between 3 and 60' }, 400)
-    }
-
-    if (
-      body.workoutsPerWeek !== undefined &&
-      (body.workoutsPerWeek < 0 || body.workoutsPerWeek > 21)
-    ) {
-      return c.json({ error: 'workoutsPerWeek must be between 0 and 21' }, 400)
-    }
-
-    if (
-      body.sleepHoursBaseline !== undefined &&
-      (body.sleepHoursBaseline < 0 || body.sleepHoursBaseline > 24)
-    ) {
-      return c.json({ error: 'sleepHoursBaseline must be between 0 and 24' }, 400)
-    }
-
-    const { assessment, stats } = await saveBaselineAssessment(user.id, body)
+    const { assessment, stats } = await saveBaselineAssessment(user.id, body as BaselineAssessmentInput)
 
     return c.json({
       success: true,
@@ -142,20 +98,11 @@ onboardingRoutes.post('/onboarding/psychology/start', requireAuth, async (c) => 
 })
 
 // POST /api/onboarding/psychology/respond - Send user message, get AI response
-onboardingRoutes.post('/onboarding/psychology/respond', requireAuth, async (c) => {
+onboardingRoutes.post('/onboarding/psychology/respond', requireAuth, zValidator('json', psychologyResponseSchema), async (c) => {
   const user = c.get('user')!
+  const body = c.req.valid('json')
 
   try {
-    const body = await c.req.json<{ message: string }>()
-
-    if (!body.message || typeof body.message !== 'string') {
-      return c.json({ error: 'message is required' }, 400)
-    }
-
-    if (body.message.length > 2000) {
-      return c.json({ error: 'message must be under 2000 characters' }, 400)
-    }
-
     const result = await respondToPsychologyAssessment(user.id, body.message)
 
     return c.json({
@@ -174,13 +121,12 @@ onboardingRoutes.post('/onboarding/psychology/respond', requireAuth, async (c) =
 })
 
 // POST /api/onboarding/psychology/complete - Finalize assessment (manual or skip)
-onboardingRoutes.post('/onboarding/psychology/complete', requireAuth, async (c) => {
+onboardingRoutes.post('/onboarding/psychology/complete', requireAuth, zValidator('json', psychologyCompleteSchema), async (c) => {
   const user = c.get('user')!
+  const body = c.req.valid('json')
 
   try {
-    const body = await c.req.json<{ traits?: Partial<PsychologyTraits> }>()
-
-    const profile = await completePsychologyAssessment(user.id, body.traits)
+    const profile = await completePsychologyAssessment(user.id, body.traits as Partial<PsychologyTraits>)
 
     return c.json({
       success: true,

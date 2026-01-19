@@ -3,21 +3,40 @@ import { api, queryKeys } from '@/lib/api';
 
 interface Quest {
   id: string;
-  title: string;
+  templateId: string;
+  name: string;
   description?: string;
+  type: string;
   category: string;
-  target: number;
-  progress: number;
-  unit: string;
-  xpReward: number;
-  completed: boolean;
+  requirement: unknown;
+  baseXP: number;
+  statType?: string;
+  statBonus?: number;
+  allowPartial?: boolean;
+  minPartialPercent?: number;
+  isCore: boolean;
+  status: 'ACTIVE' | 'COMPLETED' | 'FAILED';
+  currentValue: number;
+  targetValue: number;
+  completionPercent: number;
   completedAt?: string;
+  xpAwarded?: number;
+  questDate: string;
 }
 
+export type { Quest };
+
 interface QuestsResponse {
-  dailyQuests: Quest[];
-  weeklyQuests?: Quest[];
-  bonusQuests?: Quest[];
+  quests: Quest[];
+  coreQuests: Quest[];
+  rotatingQuest?: Quest;
+  rotatingUnlockStatus?: {
+    unlocked: boolean;
+    currentStreak: number;
+    requiredStreak: number;
+    daysUntilUnlock: number;
+  };
+  date: string;
 }
 
 interface CompleteQuestResponse {
@@ -32,7 +51,7 @@ export function useQuests() {
   const query = useQuery({
     queryKey: queryKeys.questsToday(),
     queryFn: async () => {
-      const response = await api.get<QuestsResponse>('/api/quests/today');
+      const response = await api.get<QuestsResponse>('/api/quests');
       return response;
     },
     staleTime: 1000 * 30, // 30 seconds
@@ -59,15 +78,22 @@ export function useQuests() {
   });
 
   return {
+    // Raw response data
     quests: query.data,
+    // Convenience accessors matching UI expectations
+    dailyQuests: query.data?.quests ?? [],
+    coreQuests: query.data?.coreQuests ?? [],
+    rotatingQuest: query.data?.rotatingQuest,
+    rotatingUnlockStatus: query.data?.rotatingUnlockStatus,
+
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
     refetch: query.refetch,
-    
+
     completeQuest: completeQuestMutation.mutate,
     isCompleting: completeQuestMutation.isPending,
-    
+
     updateProgress: updateProgressMutation.mutate,
     isUpdating: updateProgressMutation.isPending,
   };

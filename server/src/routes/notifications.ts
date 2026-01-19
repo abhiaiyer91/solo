@@ -1,6 +1,12 @@
 import { Hono } from 'hono'
+import { zValidator } from '@hono/zod-validator'
 import { requireAuth } from '../middleware/auth'
 import { logger } from '../lib/logger'
+import {
+  updateNotificationPrefsSchema,
+  pushSubscriptionSchema,
+  emailPrefsSchema,
+} from '../lib/validation/schemas'
 import {
   getNotificationPreferences,
   updateNotificationPreferences,
@@ -36,22 +42,11 @@ notificationRoutes.get('/notifications/preferences', requireAuth, async (c) => {
 })
 
 // Update notification preferences
-notificationRoutes.patch('/notifications/preferences', requireAuth, async (c) => {
+notificationRoutes.patch('/notifications/preferences', requireAuth, zValidator('json', updateNotificationPrefsSchema), async (c) => {
   const user = c.get('user')!
+  const body = c.req.valid('json')
 
   try {
-    const body = await c.req.json<{
-      morningQuests?: boolean
-      milestones?: boolean
-      afternoonStatus?: boolean
-      reconciliation?: boolean
-      streaks?: boolean
-      levelUp?: boolean
-      boss?: boolean
-      quietHoursStart?: number
-      quietHoursEnd?: number
-    }>()
-
     const preferences = await updateNotificationPreferences(user.id, body)
 
     return c.json({
@@ -136,17 +131,12 @@ notificationRoutes.get('/notifications/push/vapid-key', async (c) => {
 })
 
 // Register push subscription
-notificationRoutes.post('/notifications/push/subscribe', requireAuth, async (c) => {
+notificationRoutes.post('/notifications/push/subscribe', requireAuth, zValidator('json', pushSubscriptionSchema), async (c) => {
   const user = c.get('user')!
+  const subscription = c.req.valid('json')
 
   try {
-    const subscription = await c.req.json<PushSubscription>()
-
-    if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
-      return c.json({ error: 'Invalid subscription format' }, 400)
-    }
-
-    const success = await registerPushSubscription(user.id, subscription)
+    const success = await registerPushSubscription(user.id, subscription as PushSubscription)
 
     if (success) {
       return c.json({
@@ -230,18 +220,14 @@ notificationRoutes.get('/notifications/email/preferences', requireAuth, async (c
 })
 
 // Update email notification preferences
-notificationRoutes.patch('/notifications/email/preferences', requireAuth, async (c) => {
+notificationRoutes.patch('/notifications/email/preferences', requireAuth, zValidator('json', emailPrefsSchema), async (c) => {
   const user = c.get('user')!
+  const body = c.req.valid('json')
 
   try {
     if (!db) {
       return c.json({ error: 'Database not available' }, 500)
     }
-
-    const body = await c.req.json<{
-      emailEnabled?: boolean
-      weeklySummary?: boolean
-    }>()
 
     const updates: Record<string, boolean> = {}
     if (body.emailEnabled !== undefined) {

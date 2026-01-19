@@ -42,6 +42,8 @@ export interface GuildActivity {
 
 export interface GuildDetails extends Guild {
   members: GuildMember[]
+  rank?: number
+  challengesWon?: number
 }
 
 export interface CreateGuildInput {
@@ -91,8 +93,9 @@ export function useGuild() {
       await api.post('/api/guilds', data)
       queryClient.invalidateQueries({ queryKey: ['currentGuild'] })
       return { success: true }
-    } catch (error: any) {
-      return { success: false, error: error.message || 'Failed to create guild' }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create guild'
+      return { success: false, error: message }
     }
   }, [queryClient])
 
@@ -101,8 +104,9 @@ export function useGuild() {
       await api.post(`/api/guilds/${guildId}/join`)
       queryClient.invalidateQueries({ queryKey: ['currentGuild'] })
       return { success: true }
-    } catch (error: any) {
-      return { success: false, error: error.message || 'Failed to join guild' }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to join guild'
+      return { success: false, error: message }
     }
   }, [queryClient])
 
@@ -111,8 +115,9 @@ export function useGuild() {
       await api.post('/api/guilds/leave')
       queryClient.invalidateQueries({ queryKey: ['currentGuild'] })
       return { success: true }
-    } catch (error: any) {
-      return { success: false, error: error.message || 'Failed to leave guild' }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to leave guild'
+      return { success: false, error: message }
     }
   }, [queryClient])
 

@@ -1,9 +1,9 @@
 /**
- * BarcodeScanner - Camera barcode scanner component
- * Note: Requires expo-camera to be installed
+ * BarcodeScanner - Real camera barcode scanner component
+ * Uses expo-camera for scanning food product barcodes
  */
 
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native'
+import { CameraView, BarcodeScanningResult } from 'expo-camera'
+import { useCamera, FOOD_BARCODE_TYPES } from '../hooks/useCamera'
 
 interface BarcodeScannerProps {
   onScan: (barcode: string) => void
@@ -19,75 +21,105 @@ interface BarcodeScannerProps {
 
 /**
  * Barcode Scanner Component
- * 
- * Note: This is a UI stub until expo-camera is configured.
- * Real implementation uses CameraView from expo-camera.
+ * Uses expo-camera CameraView for real barcode scanning
  */
 export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
-  const [isSimulating, setIsSimulating] = useState(false)
-  const [flashEnabled, setFlashEnabled] = useState(false)
+  const {
+    permissionStatus,
+    isPermanentlyDenied,
+    requestPermission,
+    openAppSettings,
+    facing,
+    flash,
+    toggleFlash,
+    setReady,
+    cameraRef,
+  } = useCamera()
 
-  // Simulate a barcode scan for development
-  const simulateScan = () => {
-    setIsSimulating(true)
-    setTimeout(() => {
-      // Example barcode (Cheerios)
-      onScan('016000275287')
-      setIsSimulating(false)
-    }, 1500)
+  const [scanned, setScanned] = useState(false)
+
+  // Handle barcode detection
+  const handleBarcodeScanned = useCallback((result: BarcodeScanningResult) => {
+    if (scanned) return
+
+    setScanned(true)
+    onScan(result.data)
+  }, [scanned, onScan])
+
+  // Reset scanner for another scan
+  const resetScanner = useCallback(() => {
+    setScanned(false)
+  }, [])
+
+  // Permission not determined - show request screen
+  if (permissionStatus === 'undetermined') {
+    return (
+      <CameraPermissionRequest
+        onRequestPermission={requestPermission}
+        onSkip={onClose}
+      />
+    )
+  }
+
+  // Permission denied
+  if (permissionStatus === 'denied') {
+    return (
+      <CameraPermissionDenied
+        isPermanent={isPermanentlyDenied}
+        onOpenSettings={openAppSettings}
+        onSkip={onClose}
+      />
+    )
   }
 
   return (
     <View style={styles.container}>
-      {/* Camera Placeholder */}
-      <View style={styles.cameraPlaceholder}>
-        <View style={styles.viewfinder}>
-          <View style={styles.cornerTL} />
-          <View style={styles.cornerTR} />
-          <View style={styles.cornerBL} />
-          <View style={styles.cornerBR} />
-          
-          {isSimulating && (
-            <View style={styles.scanLine} />
+      <CameraView
+        ref={cameraRef}
+        style={styles.camera}
+        facing={facing}
+        flash={flash}
+        onCameraReady={() => setReady(true)}
+        barcodeScannerSettings={{
+          barcodeTypes: [...FOOD_BARCODE_TYPES],
+        }}
+        onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+      >
+        {/* Viewfinder Overlay */}
+        <View style={styles.overlay}>
+          <View style={styles.viewfinder}>
+            <View style={styles.cornerTL} />
+            <View style={styles.cornerTR} />
+            <View style={styles.cornerBL} />
+            <View style={styles.cornerBR} />
+
+            {!scanned && (
+              <View style={styles.scanLineContainer}>
+                <View style={styles.scanLine} />
+              </View>
+            )}
+          </View>
+
+          <Text style={styles.instruction}>
+            {scanned ? 'Barcode detected!' : 'Position barcode within frame'}
+          </Text>
+
+          {scanned && (
+            <Pressable style={styles.rescanButton} onPress={resetScanner}>
+              <Text style={styles.rescanButtonText}>Scan Another</Text>
+            </Pressable>
           )}
         </View>
-
-        <Text style={styles.instruction}>
-          Position barcode within frame
-        </Text>
-
-        {/* Development mode note */}
-        <View style={styles.devNote}>
-          <Text style={styles.devNoteText}>
-            Camera requires expo-camera module
-          </Text>
-          <Pressable 
-            style={styles.simulateButton}
-            onPress={simulateScan}
-            disabled={isSimulating}
-          >
-            {isSimulating ? (
-              <ActivityIndicator size="small" color="#000" />
-            ) : (
-              <Text style={styles.simulateButtonText}>
-                Simulate Scan (Dev)
-              </Text>
-            )}
-          </Pressable>
-        </View>
-      </View>
+      </CameraView>
 
       {/* Controls */}
       <View style={styles.controls}>
         <Pressable onPress={onClose} style={styles.controlButton}>
-          <Text style={styles.controlText}>✕ Cancel</Text>
+          <Text style={styles.controlText}>Cancel</Text>
         </Pressable>
-        <Pressable 
-          onPress={() => setFlashEnabled(!flashEnabled)} 
-          style={styles.controlButton}
-        >
+        <Pressable onPress={toggleFlash} style={styles.controlButton}>
           <Text style={styles.controlText}>
-            {flashEnabled ? '💡 Flash On' : '🔦 Flash Off'}
+            {flash === 'on' ? 'Flash On' : 'Flash Off'}
           </Text>
         </Pressable>
       </View>
@@ -105,21 +137,70 @@ export function CameraPermissionRequest({
   onRequestPermission: () => void
   onSkip: () => void
 }) {
+  const [isRequesting, setIsRequesting] = useState(false)
+
+  const handleRequest = async () => {
+    setIsRequesting(true)
+    await onRequestPermission()
+    setIsRequesting(false)
+  }
+
   return (
     <View style={styles.permissionContainer}>
       <Text style={styles.permissionIcon}>📷</Text>
       <Text style={styles.permissionTitle}>Camera Access Needed</Text>
       <Text style={styles.permissionText}>
-        To scan barcodes, we need access to your camera.
+        To scan food barcodes, Journey needs access to your camera.
+        Your camera feed is processed locally and never stored.
       </Text>
-      
-      <Pressable 
+
+      <Pressable
         style={styles.permissionButton}
-        onPress={onRequestPermission}
+        onPress={handleRequest}
+        disabled={isRequesting}
       >
-        <Text style={styles.permissionButtonText}>Grant Access</Text>
+        {isRequesting ? (
+          <ActivityIndicator size="small" color="#000" />
+        ) : (
+          <Text style={styles.permissionButtonText}>Grant Access</Text>
+        )}
       </Pressable>
-      
+
+      <Pressable onPress={onSkip}>
+        <Text style={styles.skipText}>Enter manually instead</Text>
+      </Pressable>
+    </View>
+  )
+}
+
+/**
+ * Camera permission denied component
+ */
+export function CameraPermissionDenied({
+  isPermanent,
+  onOpenSettings,
+  onSkip,
+}: {
+  isPermanent: boolean
+  onOpenSettings: () => void
+  onSkip: () => void
+}) {
+  return (
+    <View style={styles.permissionContainer}>
+      <Text style={styles.permissionIcon}>🚫</Text>
+      <Text style={styles.permissionTitle}>Camera Access Denied</Text>
+      <Text style={styles.permissionText}>
+        {isPermanent
+          ? 'Camera access was denied. To scan barcodes, please enable camera access in Settings.'
+          : 'Camera access is required to scan food barcodes.'}
+      </Text>
+
+      {isPermanent && (
+        <Pressable style={styles.permissionButton} onPress={onOpenSettings}>
+          <Text style={styles.permissionButtonText}>Open Settings</Text>
+        </Pressable>
+      )}
+
       <Pressable onPress={onSkip}>
         <Text style={styles.skipText}>Enter manually instead</Text>
       </Pressable>
@@ -132,18 +213,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
-  cameraPlaceholder: {
+  camera: {
+    flex: 1,
+  },
+  overlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   viewfinder: {
     width: 280,
     height: 200,
-    borderWidth: 2,
-    borderColor: 'transparent',
     position: 'relative',
+    backgroundColor: 'transparent',
   },
   cornerTL: {
     position: 'absolute',
@@ -185,43 +268,37 @@ const styles = StyleSheet.create({
     borderRightWidth: 3,
     borderColor: '#00FF00',
   },
-  scanLine: {
+  scanLineContainer: {
     position: 'absolute',
+    top: 0,
     left: 10,
     right: 10,
+    bottom: 0,
+    justifyContent: 'center',
+  },
+  scanLine: {
     height: 2,
     backgroundColor: '#00FF00',
-    top: '50%',
+    opacity: 0.8,
   },
   instruction: {
     marginTop: 20,
     fontSize: 14,
     fontFamily: 'monospace',
-    color: '#888',
+    color: '#FFF',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
-  devNote: {
-    marginTop: 40,
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 8,
-  },
-  devNoteText: {
-    fontSize: 12,
-    fontFamily: 'monospace',
-    color: '#666',
-    marginBottom: 12,
-  },
-  simulateButton: {
+  rescanButton: {
+    marginTop: 20,
     backgroundColor: '#00FF00',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 6,
-    minWidth: 140,
-    alignItems: 'center',
   },
-  simulateButtonText: {
-    fontSize: 12,
+  rescanButtonText: {
+    fontSize: 14,
     fontFamily: 'monospace',
     fontWeight: 'bold',
     color: '#000',
@@ -230,10 +307,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
   },
   controlButton: {
     padding: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+    minWidth: 100,
+    alignItems: 'center',
   },
   controlText: {
     fontSize: 14,
@@ -264,6 +345,7 @@ const styles = StyleSheet.create({
     color: '#888',
     textAlign: 'center',
     marginBottom: 30,
+    lineHeight: 22,
   },
   permissionButton: {
     backgroundColor: '#00FF00',
@@ -271,6 +353,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 8,
     marginBottom: 20,
+    minWidth: 160,
+    alignItems: 'center',
   },
   permissionButtonText: {
     fontSize: 16,

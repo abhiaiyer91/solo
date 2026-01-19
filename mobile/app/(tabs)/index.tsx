@@ -45,7 +45,7 @@ export default function DashboardScreen() {
     currentStreak: player?.currentStreak ?? 0,
     level: player?.level ?? 1,
     name: player?.name ?? 'Hunter',
-    debuffActive: false, // TODO: get from player data
+    debuffActive: player?.debuffActive ?? false,
   });
 
   // Quest stats

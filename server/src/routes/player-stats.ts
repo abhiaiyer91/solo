@@ -15,11 +15,17 @@ import {
 } from '../services/title'
 import { getXPTimeline, getXPEventBreakdown } from '../services/xp'
 import { getProgressionSummary } from '../services/progression'
+import {
+  getWeeklySummary,
+  getWeeklyHistory,
+  shouldShowWeeklySummary,
+} from '../services/weekly-summary'
+import { cacheResponse, CACHE_PRESETS } from '../lib/cache'
 
 const statsRoutes = new Hono()
 
-// Level progress
-statsRoutes.get('/player/level-progress', requireAuth, async (c) => {
+// Level progress (cached 5 min)
+statsRoutes.get('/player/level-progress', requireAuth, cacheResponse(CACHE_PRESETS.stats), async (c) => {
   const user = c.get('user')!
 
   if (!db) {
@@ -47,8 +53,8 @@ statsRoutes.get('/player/level-progress', requireAuth, async (c) => {
   }
 })
 
-// Streak info
-statsRoutes.get('/player/streak', requireAuth, async (c) => {
+// Streak info (cached 1 min)
+statsRoutes.get('/player/streak', requireAuth, cacheResponse(CACHE_PRESETS.short), async (c) => {
   const user = c.get('user')!
 
   try {
@@ -171,6 +177,51 @@ statsRoutes.get('/xp/:eventId/breakdown', requireAuth, async (c) => {
   } catch (error) {
     logger.error('XP breakdown error', { error })
     return c.json({ error: 'Failed to get XP breakdown' }, 500)
+  }
+})
+
+// Weekly summary (for Monday display)
+statsRoutes.get('/player/weekly-summary', requireAuth, async (c) => {
+  const user = c.get('user')!
+  const lastDismissedWeek = c.req.query('lastDismissed') ?? undefined
+
+  try {
+    const result = await shouldShowWeeklySummary(user.id, lastDismissedWeek)
+    return c.json(result)
+  } catch (error) {
+    logger.error('Weekly summary error', { error })
+    return c.json({ error: 'Failed to get weekly summary' }, 500)
+  }
+})
+
+// Get specific week's summary
+statsRoutes.get('/player/weekly-summary/:offset', requireAuth, async (c) => {
+  const user = c.get('user')!
+  const offset = parseInt(c.req.param('offset') || '1', 10)
+
+  try {
+    const summary = await getWeeklySummary(user.id, offset)
+    if (!summary) {
+      return c.json({ error: 'No data for this week' }, 404)
+    }
+    return c.json(summary)
+  } catch (error) {
+    logger.error('Weekly summary error', { error })
+    return c.json({ error: 'Failed to get weekly summary' }, 500)
+  }
+})
+
+// Weekly history (past N weeks)
+statsRoutes.get('/player/weekly-history', requireAuth, async (c) => {
+  const user = c.get('user')!
+  const weeks = parseInt(c.req.query('weeks') || '4', 10)
+
+  try {
+    const history = await getWeeklyHistory(user.id, Math.min(weeks, 12))
+    return c.json(history)
+  } catch (error) {
+    logger.error('Weekly history error', { error })
+    return c.json({ error: 'Failed to get weekly history' }, 500)
   }
 })
 

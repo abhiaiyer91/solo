@@ -2,7 +2,7 @@
  * TypewriterText - Advanced typewriter effect with pauses
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion } from 'framer-motion'
 
 export interface TypewriterConfig {
@@ -48,9 +48,11 @@ export function TypewriterText({
   className = '',
   showCursor = true,
 }: TypewriterTextProps) {
-  // Merge speed prop into config for convenience
-  const mergedConfig = speed ? { ...configOverrides, baseSpeed: speed } : configOverrides
-  const config = { ...DEFAULT_CONFIG, ...mergedConfig }
+  // Merge speed prop into config for convenience - memoize to prevent effect resets
+  const config = useMemo(() => {
+    const mergedConfig = speed ? { ...configOverrides, baseSpeed: speed } : configOverrides
+    return { ...DEFAULT_CONFIG, ...mergedConfig }
+  }, [speed, configOverrides])
   const [displayedText, setDisplayedText] = useState('')
   const [isComplete, setIsComplete] = useState(false)
   const [currentSpeed] = useState(config.baseSpeed)
@@ -58,31 +60,32 @@ export function TypewriterText({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Calculate delay for current character
+  const { pauseOnPunctuation, pauseDuration } = config
   const getDelay = useCallback(
     (char: string, nextChars: string): number => {
-      if (!config.pauseOnPunctuation) return currentSpeed
+      if (!pauseOnPunctuation) return currentSpeed
 
       // Check for ellipsis
       if (char === '.' && nextChars.startsWith('..')) {
-        return config.pauseDuration.ellipsis
+        return pauseDuration.ellipsis
       }
 
       switch (char) {
         case '.':
         case '!':
         case '?':
-          return config.pauseDuration.period
+          return pauseDuration.period
         case ',':
         case ';':
         case ':':
-          return config.pauseDuration.comma
+          return pauseDuration.comma
         case '\n':
-          return config.pauseDuration.newline
+          return pauseDuration.newline
         default:
           return currentSpeed
       }
     },
-    [config, currentSpeed]
+    [pauseOnPunctuation, pauseDuration, currentSpeed]
   )
 
   // Type next character

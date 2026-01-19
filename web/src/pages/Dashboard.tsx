@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePlayer, useLevelProgress } from '@/hooks/usePlayer'
 import { useQuests } from '@/hooks/useQuests'
@@ -19,6 +19,8 @@ import { UnlockProgress } from '@/components/UnlockProgress'
 import { UnlockCelebration } from '@/components/UnlockCelebration'
 import { ReturnProtocolIndicator } from '@/components/ReturnProtocolModal'
 import { useDailyGreeting } from '@/hooks/useNarrative'
+import { WeeklySummary } from '@/components/weekly/WeeklySummary'
+import { useWeeklySummaryCheck, dismissWeeklySummary } from '@/hooks/useWeeklySummary'
 
 function getFallbackMessage(streak: number, level: number, phase?: string): string {
   // Evening/Night specific messages
@@ -58,10 +60,19 @@ export function Dashboard() {
   const { data: reconciliationData } = useReconciliationItems()
   const { data: summaryData } = useDaySummary()
   const { pendingCelebration, markAsSeen } = useUnlocks()
+  const { data: weeklySummaryCheck } = useWeeklySummaryCheck()
 
   // UI State
   const [showReconciliation, setShowReconciliation] = useState(false)
   const [showSummary, setShowSummary] = useState(false)
+  const [showWeeklySummary, setShowWeeklySummary] = useState(false)
+
+  // Show weekly summary on Monday if applicable
+  useEffect(() => {
+    if (weeklySummaryCheck?.show && weeklySummaryCheck?.summary) {
+      setShowWeeklySummary(true)
+    }
+  }, [weeklySummaryCheck])
 
   // Get dynamic greeting from narrative system
   const { content: narrativeGreeting } = useDailyGreeting({
@@ -98,8 +109,9 @@ export function Dashboard() {
   const shouldShowReconciliationPrompt = dayStatus?.shouldShowReconciliation && !isDayClosed
 
   // Use narrative content if available, otherwise fall back to local message
+  // Use || instead of ?? to also fallback for empty strings
   const dailyMessage =
-    narrativeGreeting ?? getFallbackMessage(player?.currentStreak ?? 0, player?.level ?? 1, phase)
+    narrativeGreeting || getFallbackMessage(player?.currentStreak ?? 0, player?.level ?? 1, phase)
 
   // Handle reconciliation complete
   const handleReconciliationComplete = () => {
@@ -120,6 +132,14 @@ export function Dashboard() {
   // Handle dismiss summary
   const handleDismissSummary = () => {
     setShowSummary(false)
+  }
+
+  // Handle dismiss weekly summary
+  const handleDismissWeeklySummary = () => {
+    if (weeklySummaryCheck?.summary) {
+      dismissWeeklySummary(weeklySummaryCheck.summary.weekStart)
+    }
+    setShowWeeklySummary(false)
   }
 
   // Show late night mode if day is closed
@@ -145,6 +165,15 @@ export function Dashboard() {
 
   return (
     <div className={`space-y-6 ${phaseStyles.bgClass}`}>
+      {/* Weekly Summary Modal (Monday) */}
+      {weeklySummaryCheck?.summary && (
+        <WeeklySummary
+          isVisible={showWeeklySummary}
+          summary={weeklySummaryCheck.summary}
+          onDismiss={handleDismissWeeklySummary}
+        />
+      )}
+
       {/* Unlock Celebration Modal */}
       <UnlockCelebration
         unlock={pendingCelebration}

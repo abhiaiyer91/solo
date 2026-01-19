@@ -66,47 +66,68 @@ export async function getUser(): Promise<User | null> {
 }
 
 /**
+ * Better Auth response types
+ */
+interface BetterAuthSession {
+  token: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
+/**
  * Login with email and password
+ * Uses Better Auth sign-in endpoint
  */
 export async function login(email: string, password: string): Promise<AuthResponse> {
-  const response = await api.post<AuthResponse>('/api/auth/login', {
+  const response = await api.post<BetterAuthSession>('/api/auth/sign-in/email', {
     email,
     password,
   });
-  
+
   await setAuthToken(response.token);
   await setUser(response.user);
-  
-  return response;
+
+  return {
+    token: response.token,
+    user: response.user,
+  };
 }
 
 /**
  * Sign up with name, email, and password
+ * Uses Better Auth sign-up endpoint
  */
 export async function signup(name: string, email: string, password: string): Promise<AuthResponse> {
-  const response = await api.post<AuthResponse>('/api/auth/signup', {
+  const response = await api.post<BetterAuthSession>('/api/auth/sign-up/email', {
     name,
     email,
     password,
   });
-  
+
   await setAuthToken(response.token);
   await setUser(response.user);
-  
-  return response;
+
+  return {
+    token: response.token,
+    user: response.user,
+  };
 }
 
 /**
  * Logout - clear stored credentials
+ * Uses Better Auth sign-out endpoint
  */
 export async function logout(): Promise<void> {
   try {
     // Call server logout endpoint to invalidate session
-    await api.post('/api/auth/logout');
+    await api.post('/api/auth/sign-out');
   } catch {
     // Ignore errors - we'll clear local storage anyway
   }
-  
+
   await removeAuthToken();
 }
 
@@ -120,15 +141,19 @@ export async function isAuthenticated(): Promise<boolean> {
 
 /**
  * Verify token is still valid with server
+ * Uses Better Auth get-session endpoint
  */
 export async function verifySession(): Promise<User | null> {
   try {
     const token = await getAuthToken();
     if (!token) return null;
-    
-    const response = await api.get<{ user: User }>('/api/auth/session');
-    await setUser(response.user);
-    return response.user;
+
+    const response = await api.get<{ session: { userId: string }; user: User }>('/api/auth/get-session');
+    if (response.user) {
+      await setUser(response.user);
+      return response.user;
+    }
+    return null;
   } catch {
     // Token is invalid, clear it
     await removeAuthToken();
