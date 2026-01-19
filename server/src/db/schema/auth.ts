@@ -51,6 +51,10 @@ export const users = pgTable(
     quietHoursStart: integer('quiet_hours_start').default(22).notNull(), // 10 PM default
     quietHoursEnd: integer('quiet_hours_end').default(7).notNull(), // 7 AM default
 
+    // Email notification preferences
+    notifyEmailEnabled: boolean('notify_email_enabled').default(false).notNull(),
+    notifyEmailWeeklySummary: boolean('notify_email_weekly_summary').default(false).notNull(),
+
     // Return Protocol tracking
     returnProtocolActive: boolean('return_protocol_active').default(false).notNull(),
     returnProtocolDay: integer('return_protocol_day').default(0).notNull(), // 0 = not active, 1-3 = protocol day
@@ -61,6 +65,10 @@ export const users = pgTable(
     trackBodyComposition: boolean('track_body_composition').default(false).notNull(),
     targetWeight: integer('target_weight'),  // kg - optional goal weight
     targetCalories: integer('target_calories'),  // Daily calorie target
+
+    // Data Privacy / Account Deletion
+    deletionRequestedAt: timestamp('deletion_requested_at'),  // 30-day grace period starts
+    deletionConfirmedAt: timestamp('deletion_confirmed_at'),  // When user confirmed deletion
 
     // Hard Mode (unlocks at Season 3 or Level 25)
     hardModeEnabled: boolean('hard_mode_enabled').default(false).notNull(),

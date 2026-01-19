@@ -1,2 +1,9 @@
-export { usePlayer } from './usePlayer';
-export { useQuests } from './useQuests';
+export { usePlayer } from './usePlayer'
+export { useQuests } from './useQuests'
+export { useHealthSync, usePullToRefresh } from './useHealthSync'
+export { usePresets, sortPresetsByUsage, sortPresetsByProtein, type FoodPreset, type CreatePresetInput } from './usePresets'
+export { useBarcodeLookup, useLogScannedFood, formatBarcode, type BarcodeProduct, type BarcodeResponse } from './useBarcodeLookup'
+export { useNutrition, useNutritionHistory, useLogFood, useDeleteMeal, type MealLog, type DailyNutritionData, type LogFoodInput } from './useNutrition'
+export { useDashboard, getGreeting, getMotivationalMessage, type DashboardData } from './useDashboard'
+export { useSettings, useNotificationPrefs, useQuietHours, formatTime, type UserSettings } from './useSettings'
+export { useAllStats, useStatBreakdown, useAllStatBreakdowns, useMilestones, getStatColor, getStatIcon, getStatLabel, type StatType, type StatBenchmark, type StatBreakdown, type AllStatsResponse, type StatMilestone } from './useStats'

@@ -111,3 +111,12 @@ export type Session = NonNullable<typeof auth> extends { $Infer: { Session: infe
 }
 
 export type User = Session['user']
+
+/**
+ * Get user from Hono context
+ * Returns the user if authenticated, null otherwise
+ */
+export function getUser(c: { get: (key: string) => unknown }): User | null {
+  const user = c.get('user')
+  return user as User | null
+}

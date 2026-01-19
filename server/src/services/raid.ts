@@ -10,7 +10,6 @@ import { dbClient as db } from '../db'
 import {
   raids,
   raidMembers,
-  // raidPhaseProgress, // TODO: implement phase progress tracking
   users,
   type Raid,
   type RaidMember,

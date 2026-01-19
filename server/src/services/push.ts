@@ -5,6 +5,8 @@
  * Supports browser notifications with VAPID authentication.
  */
 
+import { logger } from '../lib/logger'
+
 // Database imports available for production use
 // import { dbClient as db } from '../db'
 // import { users } from '../db/schema'
@@ -60,7 +62,7 @@ export async function registerPushSubscription(
 
     return true
   } catch (error) {
-    console.error('Failed to register push subscription:', error)
+    logger.error('Failed to register push subscription', { error, userId })
     return false
   }
 }
@@ -73,7 +75,7 @@ export async function unregisterPushSubscription(userId: string): Promise<boolea
     subscriptionStore.delete(userId)
     return true
   } catch (error) {
-    console.error('Failed to unregister push subscription:', error)
+    logger.error('Failed to unregister push subscription', { error, userId })
     return false
   }
 }
@@ -102,7 +104,7 @@ export async function sendPushNotification(
   const subscription = await getPushSubscription(userId)
 
   if (!subscription) {
-    console.log(`No push subscription for user ${userId}`)
+    logger.debug('No push subscription for user', { userId })
     return false
   }
 
@@ -119,10 +121,10 @@ export async function sendPushNotification(
     //   { vapidDetails: { subject: 'mailto:...', ...vapidKeys } }
     // )
 
-    console.log(`[Push] Would send to ${userId}:`, payload.title)
+    logger.debug('Push notification would send', { userId, title: payload.title })
     return true
   } catch (error) {
-    console.error('Failed to send push notification:', error)
+    logger.error('Failed to send push notification', { error, userId })
 
     // If subscription is invalid, remove it
     if (error instanceof Error && error.message.includes('expired')) {

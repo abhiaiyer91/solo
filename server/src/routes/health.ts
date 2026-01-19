@@ -1,134 +1,112 @@
+/**
+ * Health check endpoint
+ * Used for monitoring and load balancer health checks
+ */
+
 import { Hono } from 'hono'
-import { requireAuth } from '../middleware/auth'
-import {
-  syncHealthData,
-  getTodayHealthSnapshot,
-  getHealthSnapshot,
-  getWorkoutsForDate,
-  type HealthSyncRequest,
-} from '../services/health'
-import { autoEvaluateQuestsFromHealth } from '../services/quest'
+import { dbClient } from '../db'
+import { sql } from 'drizzle-orm'
+import { logger } from '../lib/logger'
 
-const healthRoutes = new Hono()
+const app = new Hono()
 
-// Sync health data from device/manual entry
-healthRoutes.post('/health/sync', requireAuth, async (c) => {
-  const user = c.get('user')!
+interface HealthStatus {
+  status: 'healthy' | 'degraded' | 'unhealthy'
+  timestamp: string
+  version: string
+  uptime: number
+  checks: {
+    database: 'ok' | 'error'
+  }
+  error?: string
+}
 
+const startTime = Date.now()
+
+/**
+ * Basic health check - returns 200 if server is running
+ */
+app.get('/', async (c) => {
+  const version = process.env.APP_VERSION || 'dev'
+  const uptime = Math.floor((Date.now() - startTime) / 1000)
+
+  let dbStatus: 'ok' | 'error' = 'ok'
+  let error: string | undefined
+
+  // Check database connection
   try {
-    const body = await c.req.json<HealthSyncRequest>()
-
-    // Validate request
-    if (!body.source || !['HEALTHKIT', 'GOOGLE_FIT', 'MANUAL'].includes(body.source)) {
-      return c.json({ error: 'Invalid data source. Must be HEALTHKIT, GOOGLE_FIT, or MANUAL' }, 400)
+    if (dbClient) {
+      await dbClient.execute(sql`SELECT 1`)
+    } else {
+      dbStatus = 'error'
+      error = 'Database client not initialized'
     }
+  } catch (e) {
+    dbStatus = 'error'
+    error = e instanceof Error ? e.message : 'Database connection failed'
+    logger.error('Health check database error', { error })
+  }
 
-    if (!body.data) {
-      return c.json({ error: 'Health data is required' }, 400)
+  const status: HealthStatus = {
+    status: dbStatus === 'ok' ? 'healthy' : 'unhealthy',
+    timestamp: new Date().toISOString(),
+    version,
+    uptime,
+    checks: {
+      database: dbStatus,
+    },
+  }
+
+  if (error) {
+    status.error = error
+  }
+
+  const statusCode = status.status === 'healthy' ? 200 : 503
+
+  return c.json(status, statusCode)
+})
+
+/**
+ * Liveness probe - just checks if server can respond
+ */
+app.get('/live', (c) => {
+  return c.json({ status: 'ok' })
+})
+
+/**
+ * Readiness probe - checks if server is ready to accept traffic
+ */
+app.get('/ready', async (c) => {
+  try {
+    if (dbClient) {
+      await dbClient.execute(sql`SELECT 1`)
+      return c.json({ status: 'ready' })
+    } else {
+      return c.json({ status: 'not ready', reason: 'database not initialized' }, 503)
     }
-
-    // Sync health data
-    const snapshot = await syncHealthData(user.id, body)
-
-    // Auto-evaluate quests based on new health data
-    const questResults = await autoEvaluateQuestsFromHealth(user.id, user.timezone ?? 'UTC')
-
-    return c.json({
-      snapshot,
-      questsEvaluated: questResults.evaluated,
-      questsCompleted: questResults.completed,
-      questResults: questResults.results,
-      message:
-        questResults.completed > 0
-          ? `[SYSTEM] Health data synced. ${questResults.completed} quest(s) completed automatically!`
-          : '[SYSTEM] Health data synced successfully.',
-    })
-  } catch (error) {
-    console.error('Health sync error:', error)
-    const message = error instanceof Error ? error.message : 'Failed to sync health data'
-    return c.json({ error: message }, 500)
+  } catch (e) {
+    const error = e instanceof Error ? e.message : 'Unknown error'
+    return c.json({ status: 'not ready', reason: error }, 503)
   }
 })
 
-// Get today's health snapshot
-healthRoutes.get('/health/today', requireAuth, async (c) => {
-  const user = c.get('user')!
+/**
+ * Detailed metrics endpoint
+ */
+app.get('/metrics', (c) => {
+  const uptime = Math.floor((Date.now() - startTime) / 1000)
+  const memoryUsage = process.memoryUsage()
 
-  try {
-    const snapshot = await getTodayHealthSnapshot(user.id)
-
-    if (!snapshot) {
-      return c.json({
-        snapshot: null,
-        message: 'No health data synced for today yet.',
-      })
-    }
-
-    // Get today's workouts
-    const today = new Date().toISOString().split('T')[0]!
-    const workouts = await getWorkoutsForDate(user.id, today)
-
-    return c.json({
-      snapshot,
-      workouts: workouts.map((w) => ({
-        id: w.id,
-        type: w.workoutType,
-        durationMinutes: w.durationMinutes,
-        calories: w.calories,
-        distance: w.distance,
-        startTime: w.startTime.toISOString(),
-        endTime: w.endTime?.toISOString(),
-        source: w.source,
-        verification: w.verification,
-      })),
-    })
-  } catch (error) {
-    console.error('Get today health error:', error)
-    return c.json({ error: 'Failed to get health data' }, 500)
-  }
+  return c.json({
+    uptime_seconds: uptime,
+    memory: {
+      rss_mb: Math.round(memoryUsage.rss / 1024 / 1024),
+      heap_used_mb: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+      heap_total_mb: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+    },
+    node_version: process.version,
+    env: process.env.NODE_ENV || 'development',
+  })
 })
 
-// Get health snapshot for specific date
-healthRoutes.get('/health/:date', requireAuth, async (c) => {
-  const user = c.get('user')!
-  const date = c.req.param('date')
-
-  // Validate date format
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return c.json({ error: 'Invalid date format. Use YYYY-MM-DD' }, 400)
-  }
-
-  try {
-    const snapshot = await getHealthSnapshot(user.id, date)
-
-    if (!snapshot) {
-      return c.json({
-        snapshot: null,
-        message: `No health data found for ${date}.`,
-      })
-    }
-
-    // Get workouts for this date
-    const workouts = await getWorkoutsForDate(user.id, date)
-
-    return c.json({
-      snapshot,
-      workouts: workouts.map((w) => ({
-        id: w.id,
-        type: w.workoutType,
-        durationMinutes: w.durationMinutes,
-        calories: w.calories,
-        distance: w.distance,
-        startTime: w.startTime.toISOString(),
-        endTime: w.endTime?.toISOString(),
-        source: w.source,
-        verification: w.verification,
-      })),
-    })
-  } catch (error) {
-    console.error('Get health snapshot error:', error)
-    return c.json({ error: 'Failed to get health data' }, 500)
-  }
-})
-
-export default healthRoutes
+export default app

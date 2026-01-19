@@ -1,19 +1,29 @@
 # Technical Debt Report
 
-Generated: 2026-01-18 10:30 UTC
+Generated: 2026-01-18 18:00 UTC
 
 ## Summary
 
 | Severity | Count | Effort Est. |
 |----------|-------|-------------|
 | Critical | 0     | -           |
-| High     | 3     | ~2 days     |
-| Medium   | 10    | ~3 days     |
-| Low      | 7     | ~6 hours    |
+| High     | 2     | 1-2 days    |
+| Medium   | 11    | 3-4 days    |
+| Low      | 8     | 1 day       |
+| **Total Outstanding** | **21** | **~5-7 days** |
+| Resolved | 19    | -           |
 
-**Total Outstanding:** 20 items
-**Total Resolved:** 15 items
-**Categories:** Security (1), Complexity (3), Dependencies (11), TODOs (1), Logging (1), Testing (3), Types (1)
+## Category Breakdown
+
+| Category | Outstanding | Resolved |
+|----------|-------------|----------|
+| Dependencies | 12 | 1 |
+| Complexity | 4 | 1 |
+| Testing | 2 | 9 |
+| Security | 1 | 1 |
+| Logging | 1 | 0 |
+| TODOs | 1 | 2 |
+| Types | 0 | 1 |
 
 ---
 
@@ -21,148 +31,224 @@ Generated: 2026-01-18 10:30 UTC
 
 - **No hardcoded credentials** - API keys use environment variables
 - **No empty catch blocks** - Error handling is present
-- **Only 1 `any` type** - Good TypeScript discipline  
+- **Zero `any` type usage** - Excellent TypeScript discipline
 - **No `@ts-ignore`** - Clean type checking (2 `@ts-expect-error` in tests are intentional)
 - **Proper auth patterns** - Passwords handled through better-auth library
-- **Testing infrastructure established** - 13 test files with 200+ tests
+- **Testing infrastructure established** - 24 service tests, 5 component/hook tests
+- **Good test coverage on core services** - dungeon, boss, quest, narrative, shadow all tested
 
 ---
 
 ## High Priority Items (Fix Soon)
 
-### DEBT-003: quest.ts is 1050 lines (grew from 658)
+### DEBT-003: quest.ts service is 1053 lines - needs splitting
+- **File:** server/src/services/quest.ts
 - **Category:** Complexity
 - **Effort:** High
-- **Details:** Quest service has grown significantly and handles too many responsibilities
+- **Details:** Quest service has 12 exported async functions and handles too many responsibilities
 - **Fix:** Split into:
-  - `quest-core.ts` - evaluation logic, requirement parsing
-  - `quest-daily.ts` - daily quest creation and reset
-  - `quest-completion.ts` - completion logic and XP awarding
+  - `quest-core.ts` (getTodayQuests, getQuestById, getAllQuestTemplates)
+  - `quest-progress.ts` (updateQuestProgress, autoEvaluateQuestsFromHealth)
+  - `quest-lifecycle.ts` (resetQuest, activateQuest, removeQuest, deactivateQuestByTemplate)
+  - `quest-history.ts` (getQuestHistory, getQuestStatistics)
 
-### DEBT-031: 13 services without test coverage (~4,700 lines)
-- **Category:** Testing
-- **Effort:** Major
-- **Details:** Services lacking tests:
-  | Service | Lines | Priority |
-  |---------|-------|----------|
-  | rotating-quest.ts | 562 | High |
-  | leaderboard.ts | 495 | High |
-  | xp.ts | 458 | High |
-  | season.ts | 445 | Medium |
-  | guild.ts | 440 | Medium |
-  | title.ts | 423 | Medium |
-  | weekly-quest.ts | 408 | Medium |
-  | daily-log.ts | 399 | Low |
-  | health.ts | 340 | Low |
-  | return-protocol.ts | 325 | Low |
-  | notification.ts | 295 | Low |
-  | debuff.ts | 186 | Low |
-  | progression.ts | 375 | Medium |
-
-### DEBT-028: Only 1 of 7 API routes have integration tests
-- **Category:** Testing
+### DEBT-033: 7 services exceed 500 lines
+- **File:** server/src/services/
+- **Category:** Complexity
 - **Effort:** High
-- **Details:** `player.ts` has tests, but missing for:
-  - `quests.ts` (most critical)
-  - `health.ts`
-  - `content.ts`
-  - `guilds.ts`
-  - `notifications.ts`
-  - `seasons.ts`
+- **Details:**
+  | Service | Lines |
+  |---------|-------|
+  | quest.ts | 1053 |
+  | dungeon.ts | 741 |
+  | boss.ts | 711 |
+  | narrative.ts | 595 |
+  | rotating-quest.ts | 562 |
+  | shadow.ts | 560 |
+  | email.ts | 553 |
+- **Fix:** Start with quest.ts (12 exported functions), then consider dungeon.ts and boss.ts
 
 ---
 
 ## Medium Priority Items
 
-### DEBT-001: npm audit vulnerabilities
-- **Category:** Security
-- **Effort:** Medium
-- **Details:** Moderate severity vulnerabilities in:
-  - `ai` package (via @mastra/core)
-  - `esbuild` (via vite)
-  - `vite` dev server
-- **Fix:** Some require @mastra/core update; others via `npm audit fix`
+### Security
 
-### DEBT-007: 168 console statements in production code
-- **Category:** Logging
-- **Effort:** Medium
-- **Details:** Spread across 24 files, including debug logging
-- **Fix:** Implement structured logging with pino or winston
+#### DEBT-001: npm audit vulnerabilities (moderate)
+- **File:** package.json
+- **Details:** Moderate severity in ai <=5.0.51 (GHSA-rwvc-j5jr-mgvh), esbuild (via drizzle-kit), @mastra/core, better-auth
+- **Fix:**
+  - Upgrade drizzle-kit to 0.31.8 (fixes esbuild)
+  - Upgrade @mastra/core to 0.1.3 (fixes ai)
+  - Run `npm audit` for full details
 
-### DEBT-008: React 18 to React 19 upgrade
-- **Category:** Dependencies
-- **Effort:** High
-- **Details:** Major framework upgrade available
+### Logging
 
-### DEBT-011: Tailwind CSS 3 to 4 upgrade
-- **Category:** Dependencies
-- **Effort:** High
-- **Details:** Major styling framework upgrade
-
-### DEBT-033: 6 services exceed 500 lines
-- **Category:** Complexity
+#### DEBT-007: 263 console.log/error/warn statements in production code
+- **File:** server/src/
 - **Details:**
-  - quest.ts: 1050 lines
-  - dungeon.ts: 741 lines
-  - boss.ts: 711 lines
-  - narrative.ts: 595 lines
-  - rotating-quest.ts: 562 lines
-  - shadow.ts: 560 lines
+  | File | Count |
+  |------|-------|
+  | db/seed.ts | 38 |
+  | routes/player.ts | 32 |
+  | routes/quests.ts | 26 |
+  | routes/notifications.ts | 13 |
+- **Fix:** Use existing `server/src/lib/logger.ts` consistently across all files
+
+### Testing
+
+#### DEBT-028: 12 of 14 API routes lack integration tests
+- **File:** server/src/routes/
+- **Details:** Only player.ts and quests.ts have tests (14% coverage)
+- **Missing:** content, guilds, health, notifications, body, onboarding, stats, nutrition, seasons, accountability, raids, admin
+- **Priority:** notifications, body, onboarding (high traffic)
+
+#### DEBT-031: 20 services without test coverage (~7,500 lines)
+- **File:** server/src/services/
+- **Details:** 45% of services untested
+- **Priority order:**
+  | Service | Lines | Priority |
+  |---------|-------|----------|
+  | email.ts | 553 | High |
+  | body-composition.ts | 449 | High |
+  | season.ts | 445 | High |
+  | achievement.ts | 429 | Medium |
+  | title.ts | 423 | Medium |
+  | raid.ts | 417 | Medium |
+  | quest-adaptation.ts | 414 | Medium |
+  | psychology.ts | 410 | Medium |
+  | daily-log.ts | 399 | Low |
+  | health.ts | 340 | Low |
+  | nutrition.ts | - | Low |
+
+### Dependencies (Major Upgrades)
+
+#### DEBT-008: React 18 to React 19 upgrade
+- **From:** react 18.3.1, react-dom 18.3.1
+- **To:** react 19.2.3, react-dom 19.2.3
+- **Effort:** High (coordinate with types)
+- **Also upgrade:** @types/react 18.3.27 -> 19.2.8, @types/react-dom 18.3.7 -> 19.2.3
+
+#### DEBT-011: Tailwind CSS 3 to 4 upgrade
+- **From:** tailwindcss 3.4.19
+- **To:** tailwindcss 4.1.18
+- **Effort:** High (significant breaking changes in configuration and class naming)
+
+#### DEBT-016: @types/node upgrade
+- **From:** 22.19.7
+- **To:** 25.0.9
+- **Effort:** Low
+
+#### DEBT-018: @vitejs/plugin-react upgrade
+- **From:** 4.7.0
+- **To:** 5.1.2
+- **Effort:** Low (upgrade with Vite)
+
+### Complexity
+
+#### DEBT-037: routes/player.ts is 771 lines
+- **File:** server/src/routes/player.ts
+- **Details:** Largest route module with 32 console statements
+- **Fix:** Split into player-profile.ts, player-settings.ts, player-stats.ts
+
+#### DEBT-038: routes/quests.ts is 652 lines
+- **File:** server/src/routes/quests.ts
+- **Details:** Large with 26 console statements
+- **Fix:** Split into quest-daily.ts, quest-templates.ts, quest-history.ts
 
 ---
 
-## Low Priority Items
+## Low Priority Items (Backlog)
 
-| ID | Item | Category |
-|----|------|----------|
-| DEBT-004 | TODO: Push notification integration | TODOs |
-| DEBT-009 | Vite 5 to 7 upgrade | Dependencies |
-| DEBT-010 | Drizzle ORM upgrade | Dependencies |
-| DEBT-012 | framer-motion upgrade | Dependencies |
-| DEBT-013 | react-router-dom upgrade | Dependencies |
-| DEBT-014 | zod 3 to 4 upgrade | Dependencies |
-| DEBT-032 | 1 `any` type in Quests.tsx | Types |
+### Dependencies (Minor Upgrades)
+
+| ID | Package | Current | Latest | Effort |
+|----|---------|---------|--------|--------|
+| DEBT-009 | vite | 5.4.21 | 7.3.1 | Medium |
+| DEBT-010 | drizzle-orm | 0.36.4 | 0.45.1 | Medium |
+| DEBT-012 | framer-motion | 11.18.2 | 12.27.0 | Low |
+| DEBT-013 | react-router-dom | 6.30.3 | 7.12.0 | Medium |
+| DEBT-014 | zod | 3.25.76 | 4.3.5 | Medium |
+| DEBT-015 | @paralleldrive/cuid2 | 2.3.1 | 3.0.6 | Low |
+| DEBT-036 | sonner | 1.7.4 | 2.0.7 | Low |
+
+### Other
+
+- **DEBT-004:** TODO - Integrate push notification service (linked to G32-notification-system)
+- **DEBT-035:** localhost fallbacks acceptable for development
+- **DEBT-039:** Profile.tsx is 574 lines - could extract components
+- **DEBT-040:** 2 @ts-expect-error in test files (acceptable for testing)
 
 ---
 
-## Test Coverage Analysis
+## Test Coverage Status
 
-### Current State
+### Backend Services (server/src/services/)
 
+| Status | Count | Lines |
+|--------|-------|-------|
+| Tested | 24 | ~9,000 |
+| Untested | 20 | ~7,500 |
+| **Total** | **44** | **~16,500** |
+
+**Tested Services:**
+quest, dungeon, boss, narrative, shadow, xp, leaderboard, streak, level, debuff, title, weekly-quest, rotating-quest, bonus-quest, guild, accountability, notification, return-protocol, raid, hard-mode, archive, psychology, daily-log, progression
+
+**Test Files:**
 ```
-Server Tests:
-  ├── services/
-  │   ├── boss.test.ts        (21 tests)
-  │   ├── dungeon.test.ts     (7 tests)
-  │   ├── level.test.ts       (tests)
-  │   ├── narrative.test.ts   (28 tests)
-  │   ├── quest.test.ts       (19 tests)
-  │   ├── shadow.test.ts      (24 tests)
-  │   └── streak.test.ts      (tests)
-  └── routes/
-      └── player.test.ts      (15 tests)
-
-Web Tests:
-  ├── components/
-  │   ├── StatCard.test.tsx   (16 tests)
-  │   ├── QuestCard.test.tsx  (21 tests)
-  │   └── SystemMessage.test.tsx (10 tests)
-  └── hooks/
-      ├── useDayStatus.test.ts (20 tests)
-      └── useQuests.test.ts   (12 tests)
-
-Total: 13 test files, ~200+ tests
+server/src/services/
+├── quest.test.ts        (19 tests - evaluateRequirement)
+├── dungeon.test.ts      (7 tests)
+├── boss.test.ts         (21 tests)
+├── narrative.test.ts    (28 tests - interpolate)
+├── shadow.test.ts       (24 tests)
+├── xp.test.ts
+├── leaderboard.test.ts
+├── streak.test.ts
+├── level.test.ts
+├── debuff.test.ts
+├── title.test.ts
+├── weekly-quest.test.ts
+├── rotating-quest.test.ts
+├── bonus-quest.test.ts
+├── guild.test.ts
+├── accountability.test.ts
+├── notification.test.ts
+├── return-protocol.test.ts
+├── raid.test.ts
+├── hard-mode.test.ts
+├── archive.test.ts
+├── psychology.test.ts
+├── daily-log.test.ts
+└── progression.test.ts
 ```
 
-### Coverage Gaps
+### API Routes (server/src/routes/)
 
-**Backend Services (13 untested, ~4,700 lines):**
-- High priority: xp.ts, rotating-quest.ts, leaderboard.ts
-- Medium priority: season.ts, guild.ts, title.ts, weekly-quest.ts, progression.ts
-- Lower priority: daily-log.ts, health.ts, return-protocol.ts, notification.ts, debuff.ts
+| Status | Count |
+|--------|-------|
+| Tested | 2 (player.ts, quests.ts) |
+| Untested | 12 |
+| **Total** | **14** |
 
-**Backend Routes (6 untested):**
-- quests.ts, health.ts, content.ts, guilds.ts, notifications.ts, seasons.ts
+### Frontend (web/src/)
+
+| Category | Tested | Total |
+|----------|--------|-------|
+| Hooks | 2 | 26 |
+| Components | 3 | ~50 |
+
+**Test Files:**
+```
+web/src/
+├── components/
+│   ├── stats/StatCard.test.tsx
+│   ├── quest/QuestCard.test.tsx
+│   └── system/SystemMessage.test.tsx
+└── hooks/
+    ├── useDayStatus.test.ts
+    └── useQuests.test.ts
+```
 
 ---
 
@@ -171,57 +257,63 @@ Total: 13 test files, ~200+ tests
 Recommended upgrade order to minimize breakage:
 
 ### Phase 1 - Low Risk (trivial effort)
-- `@types/node`
-- `@paralleldrive/cuid2`
-- `drizzle-orm` / `drizzle-kit`
+- `@types/node` 22 -> 25
+- `@paralleldrive/cuid2` 2 -> 3
+- `drizzle-orm` 0.36 -> 0.45 / `drizzle-kit` 0.28 -> 0.31 (also fixes esbuild vuln)
+- `sonner` 1 -> 2
 
 ### Phase 2 - Medium Risk (test thoroughly)
-- `vite` + `@vitejs/plugin-react`
-- `framer-motion`
-- `zod`
+- `vite` 5 -> 7 + `@vitejs/plugin-react` 4 -> 5
+- `framer-motion` 11 -> 12
+- `zod` 3 -> 4
 
 ### Phase 3 - High Risk (plan carefully)
-- React 19 + `@types/react` + `@types/react-dom`
-- Tailwind CSS 4
+- React 19 + `@types/react` + `@types/react-dom` (coordinate together)
+- Tailwind CSS 4 (significant config changes)
 - react-router-dom 7
 
 ---
 
 ## Recommendations
 
-### Immediate Actions
-1. **Add tests for xp.ts** - Core business logic, 458 lines
-2. **Add tests for quests route** - Critical API endpoint
-3. **Fix the 1 `any` type** - Quick win for type safety
+### Immediate (This Week)
+1. **Fix security vulnerabilities:** Upgrade drizzle-kit to 0.31.8 to fix esbuild vulnerability
+2. **Migrate console.log to logger:** Focus on routes/player.ts (32 statements) first
 
 ### This Sprint
-1. Split `quest.ts` into smaller modules
-2. Add tests for rotating-quest.ts and leaderboard.ts
-3. Implement structured logging (replace console.*)
+1. **Split quest.ts service:** Currently 1053 lines with 12 functions - high priority refactor
+2. **Add route integration tests:** Focus on notifications, body, onboarding routes
+3. **Split routes/player.ts:** 771 lines is too large for a single route module
+
+### Next Sprint
+1. **React 19 upgrade:** Plan coordinated upgrade of react, react-dom, @types/react, @types/react-dom
+2. **Tailwind v4 migration:** Review migration guide, significant breaking changes expected
 
 ### Ongoing
-1. Chip away at untested services during feature work
-2. Upgrade dependencies incrementally, starting Phase 1
-3. Add route tests as you modify routes
-
-### Backlog
-1. Push notification integration (DEBT-004)
-2. Major framework upgrades (React 19, Tailwind 4)
+1. **Add service tests incrementally:** 20 services (~7,500 lines) still need coverage
+2. **Keep dependencies updated:** 15 outdated packages identified
 
 ---
 
-## Resolved Since Last Sweep
+## Recently Resolved
 
-| ID | Item | Resolution |
-|----|------|------------|
-| DEBT-002 | index.ts 738 lines | Split into route modules (now 600 lines) |
-| DEBT-005 | Mastra AI narrator TODO | Implemented with Anthropic |
+| ID | Title | Resolution |
+|----|-------|------------|
+| DEBT-002 | server/src/index.ts is 738 lines | Routes split into 14 modules (now 613 lines) |
+| DEBT-005 | Mastra AI narrator placeholder | Implemented with Anthropic integration |
 | DEBT-006 | Debuff status TODO | Implemented in dashboard |
-| DEBT-019 | Connection string logging | Removed |
-| DEBT-020 | Hardcoded localhost | Acceptable pattern for dev |
-| DEBT-022 | Zero test coverage | 13 test files, 200+ tests added |
-| DEBT-023-27 | Core service tests | Added tests for dungeon, boss, quest, narrative, shadow |
-| DEBT-029-30 | Component/hook tests | Added core component and hook tests |
+| DEBT-019 | Debug logging of connection string | Removed sensitive log |
+| DEBT-020 | Hardcoded localhost URLs | Acceptable pattern for dev with env var fallbacks |
+| DEBT-022 | Zero test coverage | Set up vitest, added 24 service tests, 5 component tests |
+| DEBT-023 | dungeon.ts untested | Added dungeon.test.ts with 7 tests |
+| DEBT-024 | boss.ts untested | Added boss.test.ts with 21 tests |
+| DEBT-025 | quest.ts partially tested | Added quest.test.ts with 19 tests |
+| DEBT-026 | narrative.ts tested | Added 28 tests for interpolate |
+| DEBT-027 | shadow.ts tested | Added 24 tests |
+| DEBT-029 | React components partially tested | Core components tested |
+| DEBT-030 | Custom hooks partially tested | Core hooks tested |
+| DEBT-032 | 'any' type usage | Confirmed zero 'any' usage |
+| DEBT-034 | Service test coverage | 24 test files exist |
 
 ---
 

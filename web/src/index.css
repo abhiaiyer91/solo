@@ -1,6 +1,36 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  /* System Colors */
+  --color-system-black: #0a0a0f;
+  --color-system-dark: #12121a;
+  --color-system-panel: #1a1a24;
+  --color-system-border: #2a2a3a;
+  --color-system-blue: #4a9eff;
+  --color-system-blue-glow: #4a9eff40;
+  --color-system-purple: #9b5de5;
+  --color-system-purple-glow: #9b5de540;
+  --color-system-gold: #ffd700;
+  --color-system-red: #ff4757;
+  --color-system-green: #2ed573;
+  --color-system-orange: #ff7f50;
+  --color-system-text: #e4e4e7;
+  --color-system-text-muted: #71717a;
+  --color-system-text-bright: #ffffff;
+
+  /* Stat Colors */
+  --color-stat-str: #ff6b6b;
+  --color-stat-agi: #4ecdc4;
+  --color-stat-vit: #45b7d1;
+  --color-stat-disc: #f9ca24;
+
+  /* Font Family */
+  --font-family-mono: 'JetBrains Mono', monospace;
+
+  /* Box Shadows */
+  --shadow-glow: 0 0 20px rgba(74, 158, 255, 0.25);
+  --shadow-glow-lg: 0 0 40px rgba(74, 158, 255, 0.35);
+}
 
 :root {
   /* Journey System Window Theme */
@@ -237,4 +267,70 @@ body {
 
 .night-mode .system-window::before {
   opacity: 0.4;
+}
+
+/* Light Theme */
+[data-theme='light'] {
+  --system-black: #f5f5f7;
+  --system-dark: #e8e8ec;
+  --system-panel: #ffffff;
+  --system-border: #d1d1d6;
+
+  /* Primary Colors - slightly darker for readability on light */
+  --system-blue: #2563eb;
+  --system-blue-glow: #2563eb20;
+  --system-purple: #7c3aed;
+  --system-purple-glow: #7c3aed20;
+
+  /* Accent Colors */
+  --system-gold: #d97706;
+  --system-red: #dc2626;
+  --system-green: #16a34a;
+  --system-orange: #ea580c;
+
+  /* Text Colors */
+  --system-text: #1f2937;
+  --system-text-muted: #6b7280;
+  --system-text-bright: #111827;
+
+  /* Stat Colors - slightly darker for light bg */
+  --stat-str: #dc2626;
+  --stat-agi: #0d9488;
+  --stat-vit: #0284c7;
+  --stat-disc: #ca8a04;
+}
+
+[data-theme='light'] body {
+  background-color: var(--system-black);
+  color: var(--system-text);
+}
+
+[data-theme='light'] .system-window {
+  background: var(--system-panel);
+  border-color: var(--system-border);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='light'] .system-window::before {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--system-blue),
+    transparent
+  );
+  opacity: 0.5;
+}
+
+[data-theme='light'] ::-webkit-scrollbar-track {
+  background: var(--system-dark);
+}
+
+[data-theme='light'] ::-webkit-scrollbar-thumb {
+  background: var(--system-border);
+}
+
+[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
+  background: var(--system-blue);
 }

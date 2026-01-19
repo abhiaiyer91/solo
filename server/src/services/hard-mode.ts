@@ -8,6 +8,7 @@
 import { dbClient as db } from '../db'
 import { users } from '../db/schema'
 import { eq } from 'drizzle-orm'
+import { getCurrentDungeonAttempt } from './dungeon'
 
 function requireDb() {
   if (!db) {
@@ -151,8 +152,11 @@ export async function enableHardMode(
  * Disable hard mode for user
  */
 export async function disableHardMode(userId: string): Promise<HardModeStatus> {
-  // TODO: Check if user is mid-dungeon
-  // For now, allow disabling anytime
+  // Check if user is mid-dungeon
+  const activeDungeon = await getCurrentDungeonAttempt(userId)
+  if (activeDungeon) {
+    throw new Error('Cannot disable hard mode while in an active dungeon. Complete or abandon the dungeon first.')
+  }
 
   await requireDb()
     .update(users)

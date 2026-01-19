@@ -1,60 +1,184 @@
-import { useState, useEffect, useCallback } from 'react'
+/**
+ * TypewriterText - Advanced typewriter effect with pauses
+ */
+
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { motion } from 'framer-motion'
+
+export interface TypewriterConfig {
+  baseSpeed: number
+  pauseOnPunctuation: boolean
+  pauseDuration: {
+    comma: number
+    period: number
+    newline: number
+    ellipsis: number
+  }
+  emphasisSpeed: number
+}
+
+const DEFAULT_CONFIG: TypewriterConfig = {
+  baseSpeed: 25,
+  pauseOnPunctuation: true,
+  pauseDuration: {
+    comma: 200,
+    period: 500,
+    newline: 1000,
+    ellipsis: 1500,
+  },
+  emphasisSpeed: 50,
+}
 
 interface TypewriterTextProps {
   text: string
-  speed?: number // ms per character
+  config?: Partial<TypewriterConfig>
+  speed?: number  // Convenience prop - maps to config.baseSpeed
   onComplete?: () => void
+  onSkip?: () => void
   className?: string
   showCursor?: boolean
 }
 
 export function TypewriterText({
   text,
-  speed = 30,
+  config: configOverrides,
+  speed,
   onComplete,
+  onSkip,
   className = '',
   showCursor = true,
 }: TypewriterTextProps) {
+  // Merge speed prop into config for convenience
+  const mergedConfig = speed ? { ...configOverrides, baseSpeed: speed } : configOverrides
+  const config = { ...DEFAULT_CONFIG, ...mergedConfig }
   const [displayedText, setDisplayedText] = useState('')
   const [isComplete, setIsComplete] = useState(false)
+  const [currentSpeed] = useState(config.baseSpeed)
+  const indexRef = useRef(0)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  const stableOnComplete = useCallback(() => {
-    onComplete?.()
-  }, [onComplete])
+  // Calculate delay for current character
+  const getDelay = useCallback(
+    (char: string, nextChars: string): number => {
+      if (!config.pauseOnPunctuation) return currentSpeed
 
+      // Check for ellipsis
+      if (char === '.' && nextChars.startsWith('..')) {
+        return config.pauseDuration.ellipsis
+      }
+
+      switch (char) {
+        case '.':
+        case '!':
+        case '?':
+          return config.pauseDuration.period
+        case ',':
+        case ';':
+        case ':':
+          return config.pauseDuration.comma
+        case '\n':
+          return config.pauseDuration.newline
+        default:
+          return currentSpeed
+      }
+    },
+    [config, currentSpeed]
+  )
+
+  // Type next character
+  const typeNextChar = useCallback(() => {
+    if (indexRef.current >= text.length) {
+      setIsComplete(true)
+      onComplete?.()
+      return
+    }
+
+    const char = text[indexRef.current]!
+    const remaining = text.slice(indexRef.current + 1)
+    const delay = getDelay(char, remaining)
+
+    setDisplayedText(text.slice(0, indexRef.current + 1))
+    indexRef.current += 1
+
+    timeoutRef.current = setTimeout(typeNextChar, delay)
+  }, [text, getDelay, onComplete])
+
+  // Start typing
   useEffect(() => {
-    // Reset when text changes
+    indexRef.current = 0
     setDisplayedText('')
     setIsComplete(false)
-  }, [text])
+    
+    timeoutRef.current = setTimeout(typeNextChar, config.baseSpeed)
 
-  useEffect(() => {
-    if (displayedText.length < text.length) {
-      const timeout = setTimeout(() => {
-        setDisplayedText(text.slice(0, displayedText.length + 1))
-      }, speed)
-
-      return () => clearTimeout(timeout)
-    } else if (!isComplete && displayedText.length === text.length) {
-      setIsComplete(true)
-      stableOnComplete()
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
     }
-  }, [displayedText, text, speed, isComplete, stableOnComplete])
+  }, [text, typeNextChar, config.baseSpeed])
 
-  // Split by newlines to preserve formatting
-  const lines = displayedText.split('\n')
+  // Handle skip
+  const handleSkip = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+    setDisplayedText(text)
+    setIsComplete(true)
+    onComplete?.()
+    onSkip?.()
+  }, [text, onComplete, onSkip])
 
   return (
-    <span className={className}>
-      {lines.map((line, i) => (
-        <span key={i}>
-          {line}
-          {i < lines.length - 1 && <br />}
-        </span>
-      ))}
+    <span
+      onClick={handleSkip}
+      className={`cursor-pointer ${className}`}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && handleSkip()}
+    >
+      {displayedText}
       {showCursor && !isComplete && (
-        <span className="inline-block w-2 h-4 ml-0.5 bg-system-blue animate-pulse align-middle" />
+        <motion.span
+          className="inline-block w-2 h-4 bg-current ml-0.5"
+          animate={{ opacity: [1, 0] }}
+          transition={{ duration: 0.5, repeat: Infinity }}
+        />
       )}
     </span>
   )
+}
+
+/**
+ * Simple typewriter for short texts
+ */
+export function TypewriterSimple({
+  text,
+  speed = 30,
+  onComplete,
+}: {
+  text: string
+  speed?: number
+  onComplete?: () => void
+}) {
+  const [displayed, setDisplayed] = useState('')
+
+  useEffect(() => {
+    let index = 0
+    setDisplayed('')
+
+    const interval = setInterval(() => {
+      if (index >= text.length) {
+        clearInterval(interval)
+        onComplete?.()
+        return
+      }
+      setDisplayed(text.slice(0, index + 1))
+      index++
+    }, speed)
+
+    return () => clearInterval(interval)
+  }, [text, speed, onComplete])
+
+  return <>{displayed}</>
 }

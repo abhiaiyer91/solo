@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { requireAuth } from '../middleware/auth'
+import { logger } from '../lib/logger'
 import {
   saveBaselineAssessment,
   getBaselineAssessment,
@@ -82,7 +83,7 @@ onboardingRoutes.post('/onboarding/baseline', requireAuth, async (c) => {
       message: '[SYSTEM] Baseline assessment recorded. Initial stats calculated.',
     })
   } catch (error) {
-    console.error('Save baseline assessment error:', error)
+    logger.error('Save baseline assessment error', { error })
     const message =
       error instanceof Error ? error.message : 'Failed to save baseline assessment'
     return c.json({ error: message }, 500)
@@ -111,7 +112,7 @@ onboardingRoutes.get('/player/baseline', requireAuth, async (c) => {
       stats,
     })
   } catch (error) {
-    console.error('Get baseline assessment error:', error)
+    logger.error('Get baseline assessment error', { error })
     return c.json({ error: 'Failed to get baseline assessment' }, 500)
   }
 })
@@ -133,7 +134,7 @@ onboardingRoutes.post('/onboarding/psychology/start', requireAuth, async (c) => 
       message: initialMessage,
     })
   } catch (error) {
-    console.error('Start psychology assessment error:', error)
+    logger.error('Start psychology assessment error', { error })
     const message =
       error instanceof Error ? error.message : 'Failed to start psychology assessment'
     return c.json({ error: message }, 500)
@@ -165,7 +166,7 @@ onboardingRoutes.post('/onboarding/psychology/respond', requireAuth, async (c) =
       traits: result.traits,
     })
   } catch (error) {
-    console.error('Psychology respond error:', error)
+    logger.error('Psychology respond error', { error })
     const message =
       error instanceof Error ? error.message : 'Failed to process response'
     return c.json({ error: message }, 500)
@@ -187,7 +188,7 @@ onboardingRoutes.post('/onboarding/psychology/complete', requireAuth, async (c) 
       message: '[SYSTEM] Psychology assessment finalized.',
     })
   } catch (error) {
-    console.error('Complete psychology assessment error:', error)
+    logger.error('Complete psychology assessment error', { error })
     const message =
       error instanceof Error ? error.message : 'Failed to complete assessment'
     return c.json({ error: message }, 500)
@@ -212,7 +213,7 @@ onboardingRoutes.get('/player/psychology', requireAuth, async (c) => {
       profile: formatPsychologyResponse(profile),
     })
   } catch (error) {
-    console.error('Get psychology profile error:', error)
+    logger.error('Get psychology profile error', { error })
     return c.json({ error: 'Failed to get psychology profile' }, 500)
   }
 })

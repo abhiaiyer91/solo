@@ -54,18 +54,26 @@ These task combinations are verified safe:
 ## Execution Flow
 
 ```
-1. READ MANIFEST
+1. ACQUIRE LOCK
+   └─> npx ts-node scripts/manifest-lock.ts acquire dev-loop
+   └─> Waits up to 10s if another agent holds lock
+
+2. READ MANIFEST
    └─> Get all available tasks sorted by priority
 
-2. SELECT BATCH
+3. SELECT BATCH
    └─> For each task, check conflicts with selected tasks
    └─> Stop when batch size = N or no more compatible tasks
 
-3. PRE-CLAIM
+4. PRE-CLAIM
    └─> Update manifest: status = "claimed", claimedBy = "agent-<domain>-<n>"
    └─> This prevents other processes from claiming same tasks
 
-4. SPAWN AGENTS
+5. RELEASE LOCK
+   └─> npx ts-node scripts/manifest-lock.ts release dev-loop
+   └─> Other agents can now read manifest
+
+6. SPAWN AGENTS
    └─> Use Task tool with run_in_background=true
    └─> Each agent gets:
        - Task ID and spec
@@ -73,21 +81,36 @@ These task combinations are verified safe:
        - Build verification command
        - Structured output requirement
 
-5. MONITOR
+7. MONITOR
    └─> Check agent output files periodically
    └─> Look for AGENT_SUMMARY_START marker
    └─> Report progress to user
 
-6. COLLECT RESULTS
+8. COLLECT RESULTS
    └─> Parse structured summaries
    └─> Verify builds passed
-   └─> Update manifest: status = "completed"
 
-7. REPORT
-   └─> Show completed tasks, time, speedup
-   └─> Show remaining available tasks
-   └─> Ask to continue or stop
+9. ACQUIRE LOCK (for update)
+   └─> npx ts-node scripts/manifest-lock.ts acquire dev-loop
+
+10. UPDATE MANIFEST
+    └─> Update manifest: status = "completed"
+
+11. RELEASE LOCK
+    └─> npx ts-node scripts/manifest-lock.ts release dev-loop
+
+12. REPORT
+    └─> Show completed tasks, time, speedup
+    └─> Show remaining available tasks
+    └─> Ask to continue or stop
 ```
+
+## Lock Timeout Handling
+
+Locks automatically expire after 60 seconds. If an agent crashes or hangs:
+- Next agent's acquire attempt will detect stale lock
+- Stale lock is automatically overridden
+- Warning is logged about the override
 
 ## Agent Spawn Template
 

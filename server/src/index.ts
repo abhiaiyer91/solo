@@ -1,11 +1,13 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { logger } from 'hono/logger'
+import { logger as honoLogger } from 'hono/logger'
 import { auth } from './lib/auth'
+import { logger } from './lib/logger'
 import { authMiddleware } from './middleware/auth'
 import { securityHeaders, getSecureCorsConfig } from './middleware/security'
-import { rateLimiter } from './middleware/rate-limit'
+import { rateLimit } from './middleware/rate-limit'
+import { requestId } from './middleware/request-id'
 import { dbClient as db } from './db'
 
 // Route modules
@@ -20,6 +22,8 @@ import accountabilityRoutes from './routes/accountability'
 import raidRoutes from './routes/raids'
 import onboardingRoutes from './routes/onboarding'
 import bodyRoutes from './routes/body'
+import statsRoutes from './routes/stats'
+import { nutritionRoutes } from './routes/nutrition'
 
 // Boss service imports
 import {
@@ -40,26 +44,28 @@ const app = new Hono()
 // Global Middleware Stack
 // ============================================================
 
-// 1. Request logging
-app.use('*', logger())
+// 1. Request ID for tracing
+app.use('*', requestId)
 
-// 2. Security headers (XSS, clickjacking, etc.)
+// 2. Request logging
+app.use('*', honoLogger())
+
+// 3. Security headers (XSS, clickjacking, etc.)
 app.use('*', securityHeaders)
 
-// 3. CORS with secure configuration
+// 4. CORS with secure configuration
 app.use('*', cors(getSecureCorsConfig()))
 
-// 4. Rate limiting (100/min per IP, 1000/min per user)
-app.use('/api/*', rateLimiter)
+// 5. Rate limiting (100/min per IP, 1000/min per user)
+app.use('/api/*', rateLimit())
 
-// 5. Auth middleware for all routes
+// 6. Auth middleware for all routes
 app.use('*', authMiddleware)
 
 // Better Auth handler - handles all /api/auth/* routes
 app.all('/api/auth/*', (c) => {
-  console.log('[AUTH] Route hit:', c.req.method, c.req.url)
   if (!auth) {
-    console.error('[AUTH] Auth is null - database not connected')
+    logger.error('Auth is null - database not connected')
     return c.json({ error: 'Authentication not configured - database connection required' }, 503)
   }
   return auth.handler(c.req.raw)
@@ -94,6 +100,8 @@ app.route('/api', accountabilityRoutes)
 app.route('/api', raidRoutes)
 app.route('/api', onboardingRoutes)
 app.route('/api', bodyRoutes)
+app.route('/api', statsRoutes)
+app.route('/api', nutritionRoutes)
 
 // Boss routes
 // GET /api/bosses - Get all available bosses for the user
@@ -113,7 +121,7 @@ app.get('/api/bosses', requireAuth, async (c) => {
       } : null,
     })
   } catch (error) {
-    console.error('Get bosses error:', error)
+    logger.error('Get bosses error', { error })
     return c.json({ error: 'Failed to get bosses' }, 500)
   }
 })
@@ -130,7 +138,7 @@ app.get('/api/bosses/:id', requireAuth, async (c) => {
 
     return c.json(formatBossResponse(boss))
   } catch (error) {
-    console.error('Get boss error:', error)
+    logger.error('Get boss error', { error })
     return c.json({ error: 'Failed to get boss' }, 500)
   }
 })
@@ -150,7 +158,7 @@ app.post('/api/bosses/:id/start', requireAuth, async (c) => {
       currentPhase: result.boss.phases[0],
     })
   } catch (error) {
-    console.error('Start boss encounter error:', error)
+    logger.error('Start boss encounter error', { error })
     const message = error instanceof Error ? error.message : 'Failed to start boss encounter'
     return c.json({ error: message }, 400)
   }
@@ -178,7 +186,7 @@ app.get('/api/bosses/:id/attempt', requireAuth, async (c) => {
       overallProgress: status.overallProgress,
     })
   } catch (error) {
-    console.error('Get boss attempt error:', error)
+    logger.error('Get boss attempt error', { error })
     return c.json({ error: 'Failed to get boss attempt status' }, 500)
   }
 })
@@ -200,7 +208,7 @@ app.post('/api/bosses/:id/abandon', requireAuth, async (c) => {
       message: result.message,
     })
   } catch (error) {
-    console.error('Abandon boss encounter error:', error)
+    logger.error('Abandon boss encounter error', { error })
     return c.json({ error: 'Failed to abandon boss encounter' }, 500)
   }
 })
@@ -226,7 +234,7 @@ app.get('/api/leaderboards/global', requireAuth, async (c) => {
     const leaderboard = await getGlobalLeaderboard(user.id, page, pageSize)
     return c.json(leaderboard)
   } catch (error) {
-    console.error('Get global leaderboard error:', error)
+    logger.error('Get global leaderboard error', { error })
     return c.json({ error: 'Failed to get global leaderboard' }, 500)
   }
 })
@@ -241,7 +249,7 @@ app.get('/api/leaderboards/weekly', requireAuth, async (c) => {
     const leaderboard = await getWeeklyLeaderboard(user.id, page, pageSize)
     return c.json(leaderboard)
   } catch (error) {
-    console.error('Get weekly leaderboard error:', error)
+    logger.error('Get weekly leaderboard error', { error })
     return c.json({ error: 'Failed to get weekly leaderboard' }, 500)
   }
 })
@@ -257,7 +265,7 @@ app.get('/api/leaderboards/seasonal', requireAuth, async (c) => {
     const leaderboard = await getSeasonalLeaderboard(user.id, seasonId, page, pageSize)
     return c.json(leaderboard)
   } catch (error) {
-    console.error('Get seasonal leaderboard error:', error)
+    logger.error('Get seasonal leaderboard error', { error })
     return c.json({ error: 'Failed to get seasonal leaderboard' }, 500)
   }
 })
@@ -270,7 +278,7 @@ app.get('/api/leaderboards/me', requireAuth, async (c) => {
     const ranks = await getPlayerRanks(user.id)
     return c.json(ranks)
   } catch (error) {
-    console.error('Get player ranks error:', error)
+    logger.error('Get player ranks error', { error })
     return c.json({ error: 'Failed to get player ranks' }, 500)
   }
 })
@@ -283,7 +291,7 @@ app.get('/api/leaderboards/preferences', requireAuth, async (c) => {
     const preferences = await getLeaderboardPreferences(user.id)
     return c.json(preferences)
   } catch (error) {
-    console.error('Get leaderboard preferences error:', error)
+    logger.error('Get leaderboard preferences error', { error })
     return c.json({ error: 'Failed to get leaderboard preferences' }, 500)
   }
 })
@@ -304,7 +312,7 @@ app.put('/api/leaderboards/preferences', requireAuth, async (c) => {
     const preferences = await getLeaderboardPreferences(user.id)
     return c.json(preferences)
   } catch (error) {
-    console.error('Update leaderboard preferences error:', error)
+    logger.error('Update leaderboard preferences error', { error })
     return c.json({ error: 'Failed to update leaderboard preferences' }, 500)
   }
 })
@@ -330,7 +338,7 @@ app.get('/api/shadows/today', requireAuth, async (c) => {
 
     return c.json(observation)
   } catch (error) {
-    console.error('Get shadow observation error:', error)
+    logger.error('Get shadow observation error', { error })
     return c.json({ error: 'Failed to get shadow observation' }, 500)
   }
 })
@@ -341,7 +349,7 @@ app.get('/api/shadows/aggregates', requireAuth, async (c) => {
     const aggregates = await getShadowAggregates()
     return c.json(aggregates)
   } catch (error) {
-    console.error('Get shadow aggregates error:', error)
+    logger.error('Get shadow aggregates error', { error })
     return c.json({ error: 'Failed to get shadow aggregates' }, 500)
   }
 })
@@ -401,7 +409,7 @@ app.get('/api/dungeons', requireAuth, async (c) => {
       },
     })
   } catch (error) {
-    console.error('Get dungeons error:', error)
+    logger.error('Get dungeons error', { error })
     return c.json({ error: 'Failed to get dungeons' }, 500)
   }
 })
@@ -427,7 +435,7 @@ app.get('/api/dungeons/:id', requireAuth, async (c) => {
       recentAttempts: dungeonHistory.map(formatDungeonAttemptResponse),
     })
   } catch (error) {
-    console.error('Get dungeon error:', error)
+    logger.error('Get dungeon error', { error })
     return c.json({ error: 'Failed to get dungeon' }, 500)
   }
 })
@@ -447,7 +455,7 @@ app.post('/api/dungeons/:id/enter', requireAuth, async (c) => {
       debuffWarning: result.debuffWarning,
     })
   } catch (error) {
-    console.error('Enter dungeon error:', error)
+    logger.error('Enter dungeon error', { error })
     const message =
       error instanceof Error ? error.message : 'Failed to enter dungeon'
     return c.json({ error: message }, 400)
@@ -500,7 +508,7 @@ app.post('/api/dungeons/:id/progress', requireAuth, async (c) => {
       dungeonCleared: false,
     })
   } catch (error) {
-    console.error('Update dungeon progress error:', error)
+    logger.error('Update dungeon progress error', { error })
     const message =
       error instanceof Error ? error.message : 'Failed to update dungeon progress'
     return c.json({ error: message }, 400)
@@ -522,7 +530,7 @@ app.post('/api/dungeons/:id/complete', requireAuth, async (c) => {
       message: result.message,
     })
   } catch (error) {
-    console.error('Complete dungeon error:', error)
+    logger.error('Complete dungeon error', { error })
     const message =
       error instanceof Error ? error.message : 'Failed to complete dungeon'
     return c.json({ error: message }, 400)
@@ -542,7 +550,7 @@ app.post('/api/dungeons/:id/fail', requireAuth, async (c) => {
       message: result.message,
     })
   } catch (error) {
-    console.error('Fail dungeon error:', error)
+    logger.error('Fail dungeon error', { error })
     const message =
       error instanceof Error ? error.message : 'Failed to abandon dungeon'
     return c.json({ error: message }, 400)
@@ -567,7 +575,7 @@ app.get('/api/dungeons/stats/me', requireAuth, async (c) => {
         : null,
     })
   } catch (error) {
-    console.error('Get dungeon stats error:', error)
+    logger.error('Get dungeon stats error', { error })
     return c.json({ error: 'Failed to get dungeon stats' }, 500)
   }
 })
@@ -584,7 +592,7 @@ app.get('/api/dungeons/history', requireAuth, async (c) => {
       attempts: history.map(formatDungeonAttemptResponse),
     })
   } catch (error) {
-    console.error('Get dungeon history error:', error)
+    logger.error('Get dungeon history error', { error })
     return c.json({ error: 'Failed to get dungeon history' }, 500)
   }
 })
@@ -592,23 +600,7 @@ app.get('/api/dungeons/history', requireAuth, async (c) => {
 
 const port = process.env.PORT ? parseInt(process.env.PORT) : 3000
 
-console.log(`
-╔═══════════════════════════════════════════════════════════╗
-║                                                           ║
-║   ███████╗██╗   ██╗███████╗████████╗███████╗███╗   ███╗   ║
-║   ██╔════╝╚██╗ ██╔╝██╔════╝╚══██╔══╝██╔════╝████╗ ████║   ║
-║   ███████╗ ╚████╔╝ ███████╗   ██║   █████╗  ██╔████╔██║   ║
-║   ╚════██║  ╚██╔╝  ╚════██║   ██║   ██╔══╝  ██║╚██╔╝██║   ║
-║   ███████║   ██║   ███████║   ██║   ███████╗██║ ╚═╝ ██║   ║
-║   ╚══════╝   ╚═╝   ╚══════╝   ╚═╝   ╚══════╝╚═╝     ╚═╝   ║
-║                                                           ║
-║              Journey Fitness Quest                        ║
-║                    Server Online                          ║
-║                                                           ║
-╚═══════════════════════════════════════════════════════════╝
-
-Server running on http://localhost:${port}
-`)
+logger.info('Server starting', { port, url: `http://localhost:${port}` })
 
 serve({
   fetch: app.fetch,

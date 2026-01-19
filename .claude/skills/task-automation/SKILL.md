@@ -51,13 +51,38 @@ Safe parallel pairs: one backend + one frontend task.
 6. Update manifest to completed
 
 ### Parallel Execution (--parallel N)
-1. Read manifest, find N non-conflicting available tasks
-2. Pre-claim all tasks in manifest (prevents race conditions)
-3. Spawn N background agents via Task tool
-4. Each agent works independently on its task
-5. Monitor agent outputs for completion
-6. Verify all builds pass
-7. Update manifest for completed tasks
+1. **Acquire manifest lock** before reading
+2. Read manifest, find N non-conflicting available tasks
+3. Pre-claim all tasks in manifest (prevents race conditions)
+4. **Release manifest lock** after claiming
+5. Spawn N background agents via Task tool
+6. Each agent works independently on its task
+7. Monitor agent outputs for completion
+8. **Acquire lock**, update manifest for completed tasks, **release lock**
+9. Verify all builds pass
+
+### Manifest Locking Protocol
+To prevent race conditions when multiple agents access the manifest:
+
+```bash
+# Acquire lock (waits up to 10s if held by another agent)
+npx ts-node scripts/manifest-lock.ts acquire <agent-id>
+
+# Release lock when done
+npx ts-node scripts/manifest-lock.ts release <agent-id>
+
+# Check lock status
+npx ts-node scripts/manifest-lock.ts status
+
+# Force release stale lock (use with caution)
+npx ts-node scripts/manifest-lock.ts force-release
+```
+
+**Lock Rules:**
+- Always acquire lock before reading/modifying manifest
+- Release lock immediately after changes are written
+- Locks auto-expire after 60 seconds (stale lock protection)
+- Lock file: `docs/planning/tasks/manifest.lock` (gitignored)
 
 ### Pipeline Check
 1. Read manifest

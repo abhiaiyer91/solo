@@ -6,6 +6,7 @@
 
 import { Hono } from 'hono'
 import { requireAuth } from '../middleware/auth'
+import { logger } from '../lib/logger'
 import {
   logBodyComposition,
   getBodyCompositionProgress,
@@ -35,7 +36,7 @@ bodyRoutes.get('/body-composition/settings', requireAuth, async (c) => {
         : '[SYSTEM] Body composition tracking is disabled.',
     })
   } catch (error) {
-    console.error('Get body settings error:', error)
+    logger.error('Get body settings error', { error })
     return c.json({ error: 'Failed to get body tracking settings' }, 500)
   }
 })
@@ -68,7 +69,7 @@ bodyRoutes.post('/body-composition/settings', requireAuth, async (c) => {
         : '[SYSTEM] Body composition tracking disabled.',
     })
   } catch (error) {
-    console.error('Update body settings error:', error)
+    logger.error('Update body settings error', { error })
     return c.json({ error: 'Failed to update body tracking settings' }, 500)
   }
 })
@@ -123,7 +124,7 @@ bodyRoutes.post('/body-composition', requireAuth, async (c) => {
       message: '[SYSTEM] Body composition logged.',
     })
   } catch (error) {
-    console.error('Log body composition error:', error)
+    logger.error('Log body composition error', { error })
     return c.json({ error: 'Failed to log body composition' }, 500)
   }
 })
@@ -145,7 +146,7 @@ bodyRoutes.get('/body-composition/today', requireAuth, async (c) => {
         : '[SYSTEM] No log for today yet.',
     })
   } catch (error) {
-    console.error('Get today log error:', error)
+    logger.error('Get today log error', { error })
     return c.json({ error: 'Failed to get today\'s log' }, 500)
   }
 })
@@ -168,7 +169,7 @@ bodyRoutes.get('/body-composition/progress', requireAuth, async (c) => {
       message: `[SYSTEM] ${days}-day progress retrieved.`,
     })
   } catch (error) {
-    console.error('Get progress error:', error)
+    logger.error('Get progress error', { error })
     return c.json({ error: 'Failed to get progress' }, 500)
   }
 })
@@ -191,7 +192,7 @@ bodyRoutes.get('/body-composition/weight-history', requireAuth, async (c) => {
       message: '[SYSTEM] Weight history retrieved.',
     })
   } catch (error) {
-    console.error('Get weight history error:', error)
+    logger.error('Get weight history error', { error })
     return c.json({ error: 'Failed to get weight history' }, 500)
   }
 })
@@ -223,7 +224,7 @@ bodyRoutes.post('/body-composition/process-weekly', requireAuth, async (c) => {
         : '[SYSTEM] Weekly deficit processed. Keep logging to earn XP!',
     })
   } catch (error) {
-    console.error('Process weekly error:', error)
+    logger.error('Process weekly error', { error })
     return c.json({ error: 'Failed to process weekly deficit' }, 500)
   }
 })

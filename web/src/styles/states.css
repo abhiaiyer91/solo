@@ -1,0 +1,225 @@
+/**
+ * Visual State CSS Overlays
+ * Environmental UI state treatments
+ */
+
+/* ============================================================
+   Base State Transitions
+   ============================================================ */
+.visual-state-transition {
+  transition: 
+    filter 0.3s ease-in-out,
+    background-color 0.3s ease-in-out;
+}
+
+/* ============================================================
+   Debuffed State
+   Desaturated, red vignette, oppressive feel
+   ============================================================ */
+.visual-state-debuffed {
+  filter: saturate(0.7) brightness(0.95);
+}
+
+.visual-state-debuffed::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    circle at center,
+    transparent 40%,
+    rgba(139, 0, 0, 0.25) 100%
+  );
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* ============================================================
+   High Streak State (30+ days)
+   Gold ambient, accent shift, triumphant
+   ============================================================ */
+.visual-state-streak-high {
+  --system-accent: #ffd700;
+  --system-blue: #ffd700;
+}
+
+.visual-state-streak-high::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 215, 0, 0.05) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 99;
+}
+
+/* ============================================================
+   Boss Active State
+   Dark crimson, tension, danger
+   ============================================================ */
+.visual-state-boss {
+  background-color: #1a0505 !important;
+}
+
+.visual-state-boss::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(139, 0, 0, 0.1) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(139, 0, 0, 0.1) 100%
+  );
+  pointer-events: none;
+  z-index: 100;
+  animation: boss-pulse 3s ease-in-out infinite;
+}
+
+@keyframes boss-pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ============================================================
+   Dungeon Active State
+   Teal tension, focused, timer-aware
+   ============================================================ */
+.visual-state-dungeon {
+  background-color: #0a1a1a !important;
+}
+
+.visual-state-dungeon::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at top,
+    rgba(45, 212, 191, 0.1) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+  z-index: 99;
+}
+
+/* ============================================================
+   Weekend Bonus State
+   Purple ambient glow
+   ============================================================ */
+.visual-state-weekend {
+  --system-accent: #a855f7;
+}
+
+.visual-state-weekend::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    circle at center,
+    rgba(168, 85, 247, 0.05) 0%,
+    transparent 60%
+  );
+  pointer-events: none;
+  z-index: 99;
+}
+
+/* ============================================================
+   Evening State (6pm - 10pm)
+   Warmer tones, relaxed
+   ============================================================ */
+.visual-state-evening {
+  filter: brightness(0.95);
+  --system-accent: #60a5fa;
+}
+
+.visual-state-evening::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(139, 69, 19, 0.03) 100%
+  );
+  pointer-events: none;
+  z-index: 99;
+}
+
+/* ============================================================
+   Night State (10pm+)
+   Darker, softer, sleep-encouraging
+   ============================================================ */
+.visual-state-night {
+  filter: brightness(0.85) contrast(0.95);
+}
+
+.visual-state-night::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 30, 0.2) 0%,
+    rgba(0, 0, 30, 0.4) 100%
+  );
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* ============================================================
+   Overlay Components
+   ============================================================ */
+
+/* Debuff banner */
+.debuff-banner {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 150;
+  padding: 4px 16px;
+  background: rgba(139, 0, 0, 0.8);
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+  font-family: monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #ff6b6b;
+  animation: debuff-pulse 2s ease-in-out infinite;
+}
+
+@keyframes debuff-pulse {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Static noise overlay for debuff */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 101;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  animation: noise-flicker 0.15s steps(5) infinite;
+}
+
+@keyframes noise-flicker {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-1px, 1px); }
+  50% { transform: translate(1px, -1px); }
+  75% { transform: translate(-1px, -1px); }
+  100% { transform: translate(1px, 1px); }
+}

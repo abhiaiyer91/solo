@@ -1,81 +1,130 @@
-# G56: HealthKit Integration
+# G56: HealthKit Integration - Core Setup
 
 ## Overview
 
-Implement Apple HealthKit integration for automatic health data sync. This enables automatic quest completion based on steps, workouts, sleep, and exercise minutes.
+Install and configure the HealthKit library in the Expo mobile app. This is the foundation for all health data sync functionality.
 
 ## Context
 
-**Source:** Retrospection analysis - Core fitness app functionality
-**Design Doc:** docs/mobile/data-input.md
-**Current State:** Backend `/api/health/sync` exists. No mobile client.
+**Source:** Ideation loop --topic "HealthKit integration"
+**Design Doc:** docs/mobile/healthkit-integration.md
+**Current State:** Mobile app foundation exists (G55 complete). Backend health sync API ready.
 
 ## Acceptance Criteria
 
-- [ ] HealthKit permissions requested properly
-- [ ] Steps data queried and synced
-- [ ] Workout data queried and synced
-- [ ] Sleep data queried and synced
-- [ ] Active calories tracked
-- [ ] Background sync every 15 minutes
-- [ ] Manual "sync now" option
-- [ ] Sync status indicator in UI
+- [ ] `@kingstinct/react-native-healthkit` installed
+- [ ] Expo config plugin configured in app.json
+- [ ] iOS entitlements set (HealthKit, background delivery)
+- [ ] Info.plist descriptions added
+- [ ] HealthKit types defined in TypeScript
+- [ ] Basic authorization hook working
+- [ ] EAS Build configured for HealthKit capability
 
 ## Files to Create/Modify
 
 | File | Action | Description |
 |------|--------|-------------|
-| `mobile/src/health/providers/healthkit.ts` | Create | HealthKit API wrapper |
-| `mobile/src/health/unified.ts` | Create | Unified health data interface |
-| `mobile/src/health/sync.ts` | Create | Sync logic with backend |
-| `mobile/src/hooks/useHealth.ts` | Create | React hook for health data |
-| `mobile/app/onboarding/health.tsx` | Create | Health permissions screen |
+| `mobile/package.json` | Modify | Add healthkit dependency |
+| `mobile/app.json` | Modify | Add config plugin + entitlements |
+| `mobile/src/health/index.ts` | Create | Module exports |
+| `mobile/src/health/types.ts` | Create | TypeScript interfaces |
+| `mobile/src/health/providers/healthkit.ts` | Create | HealthKit wrapper functions |
+| `mobile/src/health/hooks/useHealthAuth.ts` | Create | Authorization hook |
 
 ## Implementation Notes
 
-### HealthKit Types to Query
+### Dependencies to Install
 
-```typescript
-const HEALTH_TYPES = {
-  steps: 'HKQuantityTypeIdentifierStepCount',
-  activeCalories: 'HKQuantityTypeIdentifierActiveEnergyBurned',
-  exerciseMinutes: 'HKQuantityTypeIdentifierAppleExerciseTime',
-  sleepAnalysis: 'HKCategoryTypeIdentifierSleepAnalysis',
-  workouts: 'HKWorkoutType',
+```bash
+cd mobile
+npx expo install @kingstinct/react-native-healthkit
+```
+
+### app.json Configuration
+
+```json
+{
+  "expo": {
+    "plugins": [
+      ["@kingstinct/react-native-healthkit", {
+        "NSHealthShareUsageDescription": "Journey uses your health data to track quest progress and calculate your fitness stats.",
+        "NSHealthUpdateUsageDescription": "Journey can save your completed workouts to Apple Health.",
+        "background": true
+      }]
+    ],
+    "ios": {
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.background-delivery": true
+      }
+    }
+  }
 }
 ```
 
-### Permission Request Flow
-
-1. Show explanation screen (why we need access)
-2. Request permissions
-3. Show what was granted
-4. Proceed to app
-
-### Sync Strategy
+### Health Types to Support
 
 ```typescript
-interface HealthSnapshot {
-  date: string
-  steps: number
-  activeCalories: number
-  exerciseMinutes: number
-  sleepHours: number
-  workouts: Workout[]
+// mobile/src/health/types.ts
+export const HEALTH_READ_TYPES = [
+  'HKQuantityTypeIdentifierStepCount',
+  'HKQuantityTypeIdentifierActiveEnergyBurned',
+  'HKQuantityTypeIdentifierAppleExerciseTime',
+  'HKCategoryTypeIdentifierSleepAnalysis',
+  'HKWorkoutType',
+] as const;
+
+export interface HealthData {
+  steps: number;
+  activeCalories: number;
+  exerciseMinutes: number;
+  sleepMinutes: number;
+  workouts: Workout[];
 }
 
-// Sync on:
-// 1. App foreground
-// 2. Background fetch (every 15 min)
-// 3. Pull-to-refresh
-// 4. After workout completes
+export interface Workout {
+  id: string;
+  type: string;
+  durationMinutes: number;
+  calories?: number;
+  distance?: number;
+  startTime: Date;
+  endTime?: Date;
+}
 ```
+
+### Authorization Hook
+
+```typescript
+// mobile/src/health/hooks/useHealthAuth.ts
+import { useHealthkitAuthorization } from '@kingstinct/react-native-healthkit';
+import { HEALTH_READ_TYPES } from '../types';
+
+export function useHealthAuth() {
+  const [status, requestAuth] = useHealthkitAuthorization({
+    toRead: HEALTH_READ_TYPES,
+  });
+
+  return {
+    status,  // 'notDetermined' | 'sharingDenied' | 'sharingAuthorized'
+    requestAuth,
+    isAuthorized: status === 'sharingAuthorized',
+    isDenied: status === 'sharingDenied',
+    needsRequest: status === 'notDetermined',
+  };
+}
+```
+
+## Testing
+
+- Must test on physical iOS device (simulator has no HealthKit)
+- Use EAS development build: `eas build --profile development --platform ios`
+- Add test data via Health app on device
 
 ## Definition of Done
 
-- [ ] Health permissions granted on fresh install
-- [ ] Steps sync to backend
-- [ ] Workouts sync to backend
-- [ ] Sleep syncs to backend
-- [ ] Background sync works
-- [ ] Quests auto-complete from health data
+- [ ] Library installed and configured
+- [ ] Config plugin working (prebuild generates correct iOS config)
+- [ ] Authorization can be requested
+- [ ] EAS Build succeeds with HealthKit entitlement
+- [ ] No TypeScript errors

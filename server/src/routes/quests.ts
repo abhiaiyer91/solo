@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { requireAuth } from '../middleware/auth'
+import { logger } from '../lib/logger'
 import {
   getTodayQuestsWithRotating,
   getQuestById,
@@ -9,6 +10,7 @@ import {
   deactivateQuestByTemplate,
   getAllQuestTemplates,
   activateQuest,
+  getQuestHistory,
 } from '../services/quest'
 import {
   getAdaptedTarget,
@@ -30,6 +32,14 @@ import {
   rerollBonusQuest,
   getBonusQuestUnlockStatus,
 } from '../services/bonus-quest'
+import {
+  getTodayChallenge,
+  getChallengeHistory,
+  getChallengeProgress,
+  completeChallenge,
+  getChallengeStats,
+  isTodayChallengeCompleted,
+} from '../services/daily-challenge'
 
 const questRoutes = new Hono()
 
@@ -51,8 +61,34 @@ questRoutes.get('/quests', requireAuth, async (c) => {
       date: new Date().toISOString().split('T')[0],
     })
   } catch (error) {
-    console.error('Get quests error:', error)
+    logger.error('Get quests error', { error })
     return c.json({ error: 'Failed to get quests' }, 500)
+  }
+})
+
+// Get quest history
+questRoutes.get('/quests/history', requireAuth, async (c) => {
+  const user = c.get('user')!
+
+  try {
+    const limit = parseInt(c.req.query('limit') ?? '30')
+    const offset = parseInt(c.req.query('offset') ?? '0')
+    const daysBack = parseInt(c.req.query('daysBack') ?? '30')
+    const status = c.req.query('status') as 'COMPLETED' | 'FAILED' | 'ACTIVE' | undefined
+    const type = c.req.query('type') as 'DAILY' | 'WEEKLY' | undefined
+
+    const result = await getQuestHistory(user.id, {
+      limit,
+      offset,
+      daysBack,
+      status,
+      type,
+    })
+
+    return c.json(result)
+  } catch (error) {
+    logger.error('Get quest history error', { error })
+    return c.json({ error: 'Failed to get quest history' }, 500)
   }
 })
 
@@ -64,7 +100,7 @@ questRoutes.get('/quests/templates', requireAuth, async (c) => {
     const templates = await getAllQuestTemplates(user.id)
     return c.json({ templates })
   } catch (error) {
-    console.error('Get quest templates error:', error)
+    logger.error('Get quest templates error', { error })
     return c.json({ error: 'Failed to get quest templates' }, 500)
   }
 })
@@ -81,7 +117,7 @@ questRoutes.post('/quests/activate/:templateId', requireAuth, async (c) => {
       message: `[SYSTEM] Quest activated: ${quest.name}`,
     })
   } catch (error) {
-    console.error('Activate quest error:', error)
+    logger.error('Activate quest error', { error })
     const message = error instanceof Error ? error.message : 'Failed to activate quest'
     return c.json({ error: message }, 400)
   }
@@ -99,7 +135,7 @@ questRoutes.post('/quests/deactivate/:templateId', requireAuth, async (c) => {
       message: `[SYSTEM] ${result.message}`,
     })
   } catch (error) {
-    console.error('Deactivate quest error:', error)
+    logger.error('Deactivate quest error', { error })
     const message = error instanceof Error ? error.message : 'Failed to deactivate quest'
     return c.json({ error: message }, 400)
   }
@@ -117,7 +153,7 @@ questRoutes.get('/quests/:id', requireAuth, async (c) => {
     }
     return c.json(quest)
   } catch (error) {
-    console.error('Get quest error:', error)
+    logger.error('Get quest error', { error })
     return c.json({ error: 'Failed to get quest' }, 500)
   }
 })
@@ -142,7 +178,7 @@ questRoutes.post('/quests/:id/complete', requireAuth, async (c) => {
           : '[SYSTEM] Quest progress updated.',
     })
   } catch (error) {
-    console.error('Complete quest error:', error)
+    logger.error('Complete quest error', { error })
     const message = error instanceof Error ? error.message : 'Failed to complete quest'
     return c.json({ error: message }, 400)
   }
@@ -165,7 +201,7 @@ questRoutes.post('/quests/:id/reset', requireAuth, async (c) => {
           : '[SYSTEM] Quest reset.',
     })
   } catch (error) {
-    console.error('Reset quest error:', error)
+    logger.error('Reset quest error', { error })
     const message = error instanceof Error ? error.message : 'Failed to reset quest'
     return c.json({ error: message }, 400)
   }
@@ -184,7 +220,7 @@ questRoutes.delete('/quests/:id', requireAuth, async (c) => {
       message: `[SYSTEM] ${result.message}`,
     })
   } catch (error) {
-    console.error('Remove quest error:', error)
+    logger.error('Remove quest error', { error })
     const message = error instanceof Error ? error.message : 'Failed to remove quest'
     return c.json({ error: message }, 400)
   }
@@ -202,7 +238,7 @@ questRoutes.get('/quests/weekly', requireAuth, async (c) => {
       weekEnd: weeklyQuests[0]?.weekEnd ?? null,
     })
   } catch (error) {
-    console.error('Get weekly quests error:', error)
+    logger.error('Get weekly quests error', { error })
     return c.json({ error: 'Failed to get weekly quests' }, 500)
   }
 })
@@ -219,7 +255,7 @@ questRoutes.get('/quests/weekly/:id', requireAuth, async (c) => {
     }
     return c.json(quest)
   } catch (error) {
-    console.error('Get weekly quest error:', error)
+    logger.error('Get weekly quest error', { error })
     return c.json({ error: 'Failed to get weekly quest' }, 500)
   }
 })
@@ -243,7 +279,7 @@ questRoutes.get('/quests/rotating/status', requireAuth, async (c) => {
         : `[SYSTEM] Rotating quest slot locked. ${status.daysRemaining} days remaining until unlock.`,
     })
   } catch (error) {
-    console.error('Get rotating quest status error:', error)
+    logger.error('Get rotating quest status error', { error })
     return c.json({ error: 'Failed to get rotating quest status' }, 500)
   }
 })
@@ -301,7 +337,7 @@ questRoutes.get('/quests/rotating/today', requireAuth, async (c) => {
       message: `[SYSTEM] Today's rotating quest: ${rotatingQuest.name}`,
     })
   } catch (error) {
-    console.error('Get rotating quest error:', error)
+    logger.error('Get rotating quest error', { error })
     return c.json({ error: 'Failed to get rotating quest' }, 500)
   }
 })
@@ -337,7 +373,7 @@ questRoutes.get('/quests/bonus', requireAuth, async (c) => {
         : '[SYSTEM] No bonus quest available.',
     })
   } catch (error) {
-    console.error('Get bonus quest error:', error)
+    logger.error('Get bonus quest error', { error })
     return c.json({ error: 'Failed to get bonus quest' }, 500)
   }
 })
@@ -358,7 +394,7 @@ questRoutes.post('/quests/bonus/reroll', requireAuth, async (c) => {
       message: '[SYSTEM] New bonus quest assigned.',
     })
   } catch (error) {
-    console.error('Reroll bonus quest error:', error)
+    logger.error('Reroll bonus quest error', { error })
     return c.json({ error: 'Failed to reroll bonus quest' }, 500)
   }
 })
@@ -371,7 +407,7 @@ questRoutes.get('/quests/bonus/status', requireAuth, async (c) => {
     const status = await getBonusQuestUnlockStatus(user.id)
     return c.json(status)
   } catch (error) {
-    console.error('Bonus quest status error:', error)
+    logger.error('Bonus quest status error', { error })
     return c.json({ error: 'Failed to get bonus quest status' }, 500)
   }
 })
@@ -399,7 +435,7 @@ questRoutes.get('/quests/targets', requireAuth, async (c) => {
       })),
     })
   } catch (error) {
-    console.error('Get adapted targets error:', error)
+    logger.error('Get adapted targets error', { error })
     return c.json({ error: 'Failed to get adapted targets' }, 500)
   }
 })
@@ -429,7 +465,7 @@ questRoutes.get('/quests/targets/:templateId', requireAuth, async (c) => {
       },
     })
   } catch (error) {
-    console.error('Get adapted target error:', error)
+    logger.error('Get adapted target error', { error })
     return c.json({ error: 'Failed to get adapted target' }, 500)
   }
 })
@@ -460,7 +496,7 @@ questRoutes.put('/quests/targets/:templateId', requireAuth, async (c) => {
       message: '[SYSTEM] Target manually set. Automatic adaptation paused.',
     })
   } catch (error) {
-    console.error('Set manual target error:', error)
+    logger.error('Set manual target error', { error })
     const message = error instanceof Error ? error.message : 'Failed to set target'
     return c.json({ error: message }, 400)
   }
@@ -486,7 +522,7 @@ questRoutes.delete('/quests/targets/:templateId/override', requireAuth, async (c
       message: '[SYSTEM] Manual override cleared. Automatic adaptation resumed.',
     })
   } catch (error) {
-    console.error('Clear manual override error:', error)
+    logger.error('Clear manual override error', { error })
     return c.json({ error: 'Failed to clear override' }, 500)
   }
 })
@@ -507,8 +543,110 @@ questRoutes.post('/quests/targets/:templateId/adapt', requireAuth, async (c) => 
           : '[SYSTEM] Target unchanged.',
     })
   } catch (error) {
-    console.error('Adapt target error:', error)
+    logger.error('Adapt target error', { error })
     return c.json({ error: 'Failed to adapt target' }, 500)
+  }
+})
+
+// ============================================================
+// Daily Challenge Endpoints
+// ============================================================
+
+// Get today's daily challenge
+questRoutes.get('/quests/challenge', requireAuth, async (c) => {
+  const user = c.get('user')!
+
+  try {
+    const challenge = await getTodayChallenge(user.id, user.level ?? 1)
+
+    if (!challenge) {
+      return c.json({
+        challenge: null,
+        message: '[SYSTEM] No daily challenge available.',
+      })
+    }
+
+    return c.json({
+      challenge,
+      message: `[SYSTEM] Daily Challenge: ${challenge.name}`,
+    })
+  } catch (error) {
+    logger.error('Get daily challenge error', { error })
+    return c.json({ error: 'Failed to get daily challenge' }, 500)
+  }
+})
+
+// Get challenge progress
+questRoutes.get('/quests/challenge/progress', requireAuth, async (c) => {
+  const user = c.get('user')!
+
+  try {
+    const progress = await getChallengeProgress(user.id)
+
+    return c.json({
+      progress,
+      message: progress?.completed
+        ? '[SYSTEM] Challenge completed!'
+        : '[SYSTEM] Challenge in progress.',
+    })
+  } catch (error) {
+    logger.error('Get challenge progress error', { error })
+    return c.json({ error: 'Failed to get challenge progress' }, 500)
+  }
+})
+
+// Complete today's challenge
+questRoutes.post('/quests/challenge/complete', requireAuth, async (c) => {
+  const user = c.get('user')!
+
+  try {
+    const body = await c.req.json<{ challengeId: string }>()
+    const result = await completeChallenge(user.id, body.challengeId)
+
+    return c.json({
+      xpAwarded: result.xpAwarded,
+      challenge: result.challenge,
+      message: `[SYSTEM] Daily Challenge complete! +${result.xpAwarded} bonus XP!`,
+    })
+  } catch (error) {
+    logger.error('Complete challenge error', { error })
+    const message = error instanceof Error ? error.message : 'Failed to complete challenge'
+    return c.json({ error: message }, 400)
+  }
+})
+
+// Get challenge history
+questRoutes.get('/quests/challenge/history', requireAuth, async (c) => {
+  const user = c.get('user')!
+  const limit = parseInt(c.req.query('limit') ?? '7', 10)
+
+  try {
+    const history = await getChallengeHistory(user.id, limit)
+
+    return c.json({
+      history,
+      message: `[SYSTEM] Challenge history retrieved (last ${limit} days).`,
+    })
+  } catch (error) {
+    logger.error('Get challenge history error', { error })
+    return c.json({ error: 'Failed to get challenge history' }, 500)
+  }
+})
+
+// Get challenge stats
+questRoutes.get('/quests/challenge/stats', requireAuth, async (c) => {
+  const user = c.get('user')!
+
+  try {
+    const stats = await getChallengeStats(user.id)
+
+    return c.json({
+      stats,
+      message: '[SYSTEM] Challenge statistics retrieved.',
+    })
+  } catch (error) {
+    logger.error('Get challenge stats error', { error })
+    return c.json({ error: 'Failed to get challenge stats' }, 500)
   }
 })
 

@@ -1,0 +1,273 @@
+/**
+ * CSS Keyframe Animations
+ * GPU-accelerated effects for System aesthetic
+ */
+
+/* ============================================================
+   Scanline Effect
+   ============================================================ */
+@keyframes scanline {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 0% 100%;
+  }
+}
+
+.animate-scanline {
+  animation: scanline 4s linear infinite;
+  background-image: linear-gradient(
+    to bottom,
+    transparent 50%,
+    rgba(0, 255, 100, 0.03) 50%
+  );
+  background-size: 100% 4px;
+}
+
+/* ============================================================
+   Flicker Effect
+   ============================================================ */
+@keyframes flicker {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  25%, 75% {
+    opacity: 0.9;
+  }
+}
+
+.animate-flicker {
+  animation: flicker 0.15s infinite;
+}
+
+/* Subtle version for terminals */
+.animate-flicker-subtle {
+  animation: flicker 2s infinite;
+}
+
+/* ============================================================
+   Glitch Effect
+   ============================================================ */
+@keyframes glitch {
+  0% {
+    transform: translate(0);
+    filter: none;
+  }
+  20% {
+    transform: translate(-2px, 1px);
+    filter: hue-rotate(90deg);
+  }
+  40% {
+    transform: translate(2px, -1px);
+    filter: hue-rotate(-90deg);
+  }
+  60% {
+    transform: translate(-1px, -1px);
+    filter: hue-rotate(45deg);
+  }
+  80% {
+    transform: translate(1px, 1px);
+    filter: none;
+  }
+  100% {
+    transform: translate(0);
+    filter: none;
+  }
+}
+
+.animate-glitch {
+  animation: glitch 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* Glitch on hover */
+.hover-glitch:hover {
+  animation: glitch 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* ============================================================
+   Pulse Glow Effect
+   ============================================================ */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px currentColor, 0 0 10px currentColor;
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 15px currentColor, 0 0 30px currentColor;
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ============================================================
+   Text Glow Variations
+   ============================================================ */
+.glow-blue {
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+.glow-green {
+  text-shadow: 0 0 10px rgba(0, 255, 100, 0.5), 0 0 20px rgba(0, 255, 100, 0.3);
+}
+
+.glow-gold {
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5), 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+.glow-red {
+  text-shadow: 0 0 10px rgba(239, 68, 68, 0.5), 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+.glow-purple {
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.5), 0 0 20px rgba(168, 85, 247, 0.3);
+}
+
+/* ============================================================
+   Typing Cursor
+   ============================================================ */
+@keyframes cursor-blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+.typing-cursor::after {
+  content: '▌';
+  animation: cursor-blink 1s step-end infinite;
+  color: currentColor;
+}
+
+/* ============================================================
+   Progress Bar Fill
+   ============================================================ */
+@keyframes progress-shine {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.progress-shine {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: progress-shine 1.5s ease-in-out infinite;
+}
+
+/* ============================================================
+   XP Float Animation (utility)
+   ============================================================ */
+@keyframes xp-float {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-80px);
+    opacity: 0;
+  }
+}
+
+.animate-xp-float {
+  animation: xp-float 1s ease-out forwards;
+}
+
+/* ============================================================
+   Shake Animation (for errors/alerts)
+   ============================================================ */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-4px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(4px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* ============================================================
+   Fade In Up (for list items)
+   ============================================================ */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.3s ease-out forwards;
+}
+
+/* Stagger children */
+.stagger-children > * {
+  animation: fade-in-up 0.3s ease-out forwards;
+  opacity: 0;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 300ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 350ms; }
+
+/* ============================================================
+   Border Glow (for focus states)
+   ============================================================ */
+@keyframes border-glow {
+  0%, 100% {
+    border-color: rgba(59, 130, 246, 0.5);
+  }
+  50% {
+    border-color: rgba(59, 130, 246, 0.8);
+  }
+}
+
+.animate-border-glow {
+  animation: border-glow 2s ease-in-out infinite;
+}
+
+/* ============================================================
+   Spin with Delay (for loading states)
+   ============================================================ */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}

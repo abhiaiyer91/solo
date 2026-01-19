@@ -50,6 +50,43 @@ seasonRoutes.get('/seasons/current', async (c) => {
   }
 })
 
+// Get seasonal quests (unlocks in Season 2)
+seasonRoutes.get('/seasons/quests', requireAuth, async (c) => {
+  const user = c.get('user')!
+
+  try {
+    const participation = await getUserCurrentSeason(user.id)
+    const currentSeason = participation?.season ?? null
+
+    // Seasonal quests unlock in Season 2 (The Contender)
+    const UNLOCK_SEASON = 2
+    const isUnlocked = currentSeason ? currentSeason.number >= UNLOCK_SEASON : false
+
+    // For now, return empty quests - seasonal quest system can be expanded later
+    // This provides the expected response shape for the frontend
+    return c.json({
+      season: currentSeason
+        ? {
+            id: currentSeason.id,
+            name: currentSeason.name,
+            theme: currentSeason.theme,
+            number: currentSeason.number,
+            isActive: currentSeason.status === 'ACTIVE',
+            startDate: participation?.startedAt?.toISOString() ?? null,
+            endDate: null,
+          }
+        : null,
+      quests: [],
+      isUnlocked,
+      unlockSeason: UNLOCK_SEASON,
+      currentSeason: currentSeason?.number ?? null,
+    })
+  } catch (error) {
+    console.error('Get seasonal quests error:', error)
+    return c.json({ error: 'Failed to get seasonal quests' }, 500)
+  }
+})
+
 // Get specific season
 seasonRoutes.get('/seasons/:id', async (c) => {
   const seasonId = c.req.param('id')

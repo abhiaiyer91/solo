@@ -45,3 +45,6 @@ sanity/.sanity/
 # Misc
 .cache/
 *.tsbuildinfo
+
+# Task automation locks
+docs/planning/tasks/manifest.lock

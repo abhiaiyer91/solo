@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePlayer } from '@/hooks/usePlayer'
 import { useAuth } from '@/hooks/useAuth'
+import { useTheme, type Theme } from '@/hooks/useTheme'
 import { TimezoneSelect, NotificationSettings } from '@/components/profile'
 import { ArchivesHistory } from '@/components/ArchiveModal'
 import { api, queryKeys } from '@/lib/api'
@@ -141,6 +142,25 @@ export function Profile() {
         )}
       </motion.div>
 
+      {/* Theme Settings */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.22 }}
+        className="system-window p-6"
+      >
+        <h2 className="text-lg font-bold text-system-text mb-4 flex items-center gap-2">
+          <span className="w-2 h-2 bg-system-purple rounded-full" />
+          APPEARANCE
+        </h2>
+
+        <p className="text-system-text-muted text-sm mb-4">
+          Choose your preferred interface theme.
+        </p>
+
+        <ThemeSelector />
+      </motion.div>
+
       {/* Notification Settings */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -221,6 +241,23 @@ export function Profile() {
           Previous runs that have been archived. Each archive preserves a snapshot of your progress.
         </p>
         <ArchivesHistory />
+      </motion.div>
+
+      {/* Privacy & Data */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.38 }}
+        className="system-window p-6"
+      >
+        <h2 className="text-lg font-bold text-system-text mb-4 flex items-center gap-2">
+          <span className="w-2 h-2 bg-system-blue rounded-full" />
+          PRIVACY & DATA
+        </h2>
+        <p className="text-system-text-muted text-sm mb-4">
+          Export all your data in JSON format for GDPR/CCPA compliance.
+        </p>
+        <DataExportButton />
       </motion.div>
 
       {/* Logout */}
@@ -412,5 +449,126 @@ function HardModeSection({ level }: { level: number }) {
         </div>
       )}
     </motion.div>
+  )
+}
+
+// Data Export Button Component
+function DataExportButton() {
+  const [isExporting, setIsExporting] = useState(false)
+  const [exportSuccess, setExportSuccess] = useState(false)
+
+  const handleExport = async () => {
+    setIsExporting(true)
+    setExportSuccess(false)
+
+    try {
+      const response = await api.get('/api/player/export') as Response
+
+      if (!response.ok) {
+        throw new Error('Export failed')
+      }
+
+      // Get the JSON data
+      const data = await response.json()
+
+      // Create a download
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `journey-data-export-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      setExportSuccess(true)
+      toast.success('Data exported successfully')
+    } catch (error) {
+      console.error('Export error:', error)
+      toast.error('Failed to export data')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <button
+        onClick={handleExport}
+        disabled={isExporting}
+        className={`
+          w-full py-3 border border-system-blue/50 rounded text-system-blue
+          hover:bg-system-blue/10 transition-colors flex items-center justify-center gap-2
+          ${isExporting ? 'opacity-50 cursor-not-allowed' : ''}
+        `}
+      >
+        {isExporting ? (
+          <>
+            <div className="w-4 h-4 border-2 border-system-blue border-t-transparent rounded-full animate-spin" />
+            Exporting...
+          </>
+        ) : (
+          <>
+            <span>Export My Data</span>
+          </>
+        )}
+      </button>
+
+      {exportSuccess && (
+        <p className="text-system-green text-sm text-center">
+          Export complete. Check your downloads folder.
+        </p>
+      )}
+
+      <p className="text-system-text-muted text-xs">
+        Your export includes: account info, quest history, XP timeline, daily logs,
+        titles, health snapshots, dungeon attempts, guild memberships, and body composition data.
+      </p>
+    </div>
+  )
+}
+
+// Theme Selector Component
+function ThemeSelector() {
+  const { theme, setTheme, effectiveTheme } = useTheme()
+
+  const themes: { value: Theme; label: string; icon: string }[] = [
+    { value: 'dark', label: 'Dark', icon: '🌙' },
+    { value: 'light', label: 'Light', icon: '☀️' },
+    { value: 'system', label: 'System', icon: '💻' },
+  ]
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-3 gap-2">
+        {themes.map((t) => (
+          <button
+            key={t.value}
+            onClick={() => setTheme(t.value)}
+            className={`
+              p-3 border rounded-lg transition-all flex flex-col items-center gap-1
+              ${theme === t.value
+                ? 'border-system-blue bg-system-blue/10'
+                : 'border-system-border hover:border-system-blue/50'
+              }
+            `}
+          >
+            <span className="text-xl">{t.icon}</span>
+            <span className={`text-xs font-medium ${
+              theme === t.value ? 'text-system-blue' : 'text-system-text-muted'
+            }`}>
+              {t.label}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {theme === 'system' && (
+        <p className="text-system-text-muted text-xs text-center">
+          Currently using: {effectiveTheme === 'dark' ? 'Dark' : 'Light'} (based on system preference)
+        </p>
+      )}
+    </div>
   )
 }
