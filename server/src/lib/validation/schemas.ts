@@ -400,3 +400,34 @@ export const updatePlayerSchema = z.object({
   timezone: z.enum(VALID_TIMEZONES).optional(),
   name: z.string().min(1).max(50).transform(s => s.trim()).optional(),
 })
+
+// ============================================================
+// Fitness Tests Schemas
+// ============================================================
+
+export const fitnessTestTypeSchema = z.enum([
+  'MILE_TIME',
+  'BENCH_PRESS',
+  'SQUAT',
+  'DEADLIFT',
+])
+
+export type FitnessTestTypeInput = z.infer<typeof fitnessTestTypeSchema>
+
+export const recordFitnessTestSchema = z.object({
+  testType: fitnessTestTypeSchema,
+  value: z.number().positive('Value must be positive'),
+  unit: z.string().optional(),
+  notes: z.string().max(500).optional(),
+  testDate: dateString.optional(),
+})
+
+export const skipFitnessTestSchema = z.object({
+  testType: fitnessTestTypeSchema,
+})
+
+export const fitnessTestHistoryQuerySchema = z.object({
+  testType: fitnessTestTypeSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().nonnegative().default(0),
+})

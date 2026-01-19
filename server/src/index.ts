@@ -30,6 +30,7 @@ import exerciseRoutes from './routes/exercises'
 import customQuestRoutes from './routes/custom-quests'
 import profileCustomizationRoutes from './routes/profile'
 import narrativeRoutes from './routes/narrative'
+import fitnessTestRoutes from './routes/fitness-tests'
 
 // Boss service imports
 import {
@@ -114,6 +115,7 @@ app.route('/api/exercises', exerciseRoutes)
 app.route('/api/custom-quests', customQuestRoutes)
 app.route('/api/profile', profileCustomizationRoutes)
 app.route('/api/narrative', narrativeRoutes)
+app.route('/api', fitnessTestRoutes)
 
 // Boss routes
 // GET /api/bosses - Get all available bosses for the user
